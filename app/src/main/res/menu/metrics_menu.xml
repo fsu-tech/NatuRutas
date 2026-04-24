@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/metric_velocidad_promedio"
+        android:title="Velocidad Promedio" />
+    <item
+        android:id="@+id/metric_distance"
+        android:title="Distancia" />
+    <item
+        android:id="@+id/metric_duration"
+        android:title="Duración" />
+    <item
+        android:id="@+id/metric_desnivel"
+        android:title="Desnivel" />
+    <item
+        android:id="@+id/metric_perfil"
+        android:title="Perfil de Elevación" />
+</menu>

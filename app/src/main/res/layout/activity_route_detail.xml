@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/routeNameTypeTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_alignParentTop="true" />
+
+        <TextView
+            android:id="@+id/statsTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Estadísticas"
+            android:layout_below="@id/routeNameTypeTextView"
+            android:padding="8dp" />
+
+        <org.osmdroid.views.MapView
+            android:id="@+id/routeMapView"
+            android:layout_width="match_parent"
+            android:layout_height="250dp"
+            android:layout_below="@id/statsTextView" />
+
+        <Button
+            android:id="@+id/insigniasButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Insignias"
+            android:layout_below="@id/routeMapView"
+            android:layout_marginTop="16dp" />
+
+        <LinearLayout
+            android:id="@+id/insigniasDesbloqueadasLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_below="@id/insigniasButton"
+            android:layout_marginTop="8dp" />
+
+        <ImageButton
+            android:id="@+id/deleteButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_delete"
+            android:layout_below="@id/insigniasDesbloqueadasLayout"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_marginTop="16dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/delete_route"
+            android:minWidth="48dp"
+            android:minHeight="48dp" />
+
+    </RelativeLayout>
+
+</ScrollView>

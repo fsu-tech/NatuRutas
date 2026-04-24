@@ -1,0 +1,18 @@
+<resources>
+
+
+        <string name="app_name">NatuRutas</string>
+        <string name="no_points_found">No se encontraron puntos de ruta en el archivo GPX</string>
+        <string name="delete_route">Eliminar ruta</string>
+
+        <string-array name="route_types">
+                <item>Senderismo</item>
+                <item>Ciclismo</item>
+                <item>Ecuestre</item>
+                <item>Coche</item>
+                <item>Moto</item>
+        </string-array>
+
+
+
+</resources>

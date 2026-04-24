@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="General">
+
+        <SwitchPreferenceCompat
+            app:key="dark_mode"
+            app:title="Modo Oscuro"
+            app:summary="Activar/desactivar el modo oscuro" />
+
+        <EditTextPreference
+            app:key="user_name"
+            app:title="Nombre de Usuario"
+            app:summary="Introduce tu nombre de usuario"
+            android:hint="Introduce tu nombre de usuario"
+            android:inputType="textPersonName" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Notificaciones">
+
+        <CheckBoxPreference
+            app:key="notifications_enabled"
+            app:title="Activar Notificaciones"
+            app:summary="Recibir notificaciones de la aplicación" />
+
+    </PreferenceCategory>
+
+</androidx.preference.PreferenceScreen>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+<!-- Archivo eliminado. Layout obsoleto. -->
+    <org.osmdroid.views.MapView
+        android:id="@+id/mapView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:id="@+id/buttonContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:padding="16dp"
+        android:background="@android:color/transparent">
+
+        <Button
+            android:id="@+id/btnStartRoute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Iniciar Ruta" />
+
+        <Button
+            android:id="@+id/btnStopRoute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Detener Ruta"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btnSaveRoute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Guardar Ruta"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btn_add_poi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Agregar Punto de Interés" />
+
+        <Button
+            android:id="@+id/btnPauseRoute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pausar"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btnResumeRoute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Reanudar"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+</RelativeLayout>
+
+

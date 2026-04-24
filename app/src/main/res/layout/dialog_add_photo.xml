@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <EditText
+        android:id="@+id/et_photo_url"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
+        android:padding="8dp"
+        android:hint="URL de la foto"
+        android:inputType="textUri"
+        android:layout_marginBottom="8dp"/> <EditText
+    android:id="@+id/et_description"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="48dp"
+    android:padding="8dp"
+    android:hint="Descripción"
+    android:inputType="textMultiLine"
+    android:gravity="top|start"/> </LinearLayout>

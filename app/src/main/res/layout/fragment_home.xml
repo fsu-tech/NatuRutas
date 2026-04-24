@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".view.fragments.HomeFragment">
+
+
+
+    <Button
+        android:id="@+id/btnLoadGpx"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:text="Cargar GPX" />
+
+    <!-- Botones de grabación abajo, igual que en Crear Ruta -->
+    <LinearLayout
+        android:id="@+id/buttonContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="80dp"
+        android:background="@android:color/transparent"
+        android:layout_gravity="center_horizontal">
+
+        <Button
+            android:id="@+id/btnStartRoute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Iniciar Ruta"/>
+
+        <Button
+            android:id="@+id/btnStopRoute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Detener Ruta"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/btnSaveRoute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Guardar Ruta"
+            android:visibility="gone"/>
+
+
+        <Button
+            android:id="@+id/btnPauseRoute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pausar"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/btnResumeRoute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Reanudar"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/btn_add_poi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Agregar Punto de Interés" />
+    </LinearLayout>
+
+    <org.osmdroid.views.MapView
+        android:id="@+id/mapView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+</LinearLayout>
+

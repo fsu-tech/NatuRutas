@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/ic_home"
+        android:title="Inicio" />
+
+
+    <item
+        android:id="@+id/nav_compare"
+        android:icon="@drawable/ic_compare"
+        android:title="Comparar" />
+
+    <item
+        android:id="@+id/nav_settings"
+        android:icon="@drawable/ic_settings"
+        android:title="Ajustes" />
+
+    <item
+        android:id="@+id/nav_saved_routes"
+        android:icon="@drawable/ic_saved_routes"
+        android:title="Rutas Guardadas" />
+
+
+</menu>
+
