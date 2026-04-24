@@ -178,6 +178,21 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             dbHelper.registrarEvento("Grabacion", "pausar_grabacion", null)
             pauseRoute()
         }
+
+        // Botón para eliminar la ruta cargada (GPX)
+        view.findViewById<Button?>(R.id.btnRemoveLoadedRoute)?.setOnClickListener {
+            polyline?.let {
+                mapView.overlays.remove(it)
+                polyline = null
+            }
+            // Eliminar marcadores asociados a la ruta cargada
+            gpxOverlays.forEach { overlay ->
+                mapView.overlays.remove(overlay)
+            }
+            gpxOverlays.clear()
+            limpiarRutaEnSharedPreferences()
+            Toast.makeText(requireContext(), "Ruta cargada eliminada", Toast.LENGTH_SHORT).show()
+        }
         btnResumeRoute.setOnClickListener {
             dbHelper.registrarEvento("Grabacion", "reanudar_grabacion", null)
             resumeRoute()

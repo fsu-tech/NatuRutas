@@ -50,11 +50,6 @@ class SavedRoutesFragment : Fragment(R.layout.fragment_saved_routes),
         routesAdapter = RoutesAdapter(routes, this)
         routesList.adapter = routesAdapter
 
-        // Botón Rutas para ti
-        view.findViewById<View>(R.id.btnRecomendaciones)?.setOnClickListener {
-            dbHelper.registrarEvento("MisRutas", "click_rutas_para_ti", null)
-            startActivity(Intent(requireContext(), com.example.gpxeditor.controller.RecommendationsActivity::class.java))
-        }
     }
 
     override fun onItemClick(route: Route) {

@@ -15,6 +15,13 @@
         android:layout_margin="10dp"
         android:text="Cargar GPX" />
 
+    <Button
+        android:id="@+id/btnRemoveLoadedRoute"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:text="Eliminar ruta cargada" />
+
     <!-- Botones de grabación abajo, igual que en Crear Ruta -->
     <LinearLayout
         android:id="@+id/buttonContainer"
