@@ -101,12 +101,15 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private lateinit var dbHelper: DatabaseHelper
     private var tiempoEntrada: Long = 0
 
+    // Flag para evitar animación en el primer callback tras volver a la pestaña
+    private var skipNextLocationAnimation = false
+
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             if (isAdded && isResumed) {
                 locationResult.lastLocation?.let { location ->
                     val geoPoint = GeoPoint(location.latitude, location.longitude)
-                    updateUserLocation(geoPoint)
+                    updateUserLocation(geoPoint, skipAnimation = skipNextLocationAnimation)
                     lastLocation = location
 
                     // Si está grabando y no está en pausa, añadir punto y actualizar polyline de grabación
@@ -122,6 +125,10 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                         }
                         recordingPolyline?.setPoints(currentPoints)
                         mapView.invalidate()
+                    }
+                    // Si el flag está activo, lo desactivamos tras el primer callback
+                    if (skipNextLocationAnimation) {
+                        skipNextLocationAnimation = false
                     }
                 }
             }
@@ -153,10 +160,20 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         dbHelper = DatabaseHelper(requireContext())
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
 
+        // Solo centrar en Madrid si no hay grabación ni puntos grabados
         val mapController = mapView.controller
-        val startPoint = GeoPoint(40.4168, -3.7038)
-        mapController.setZoom(12.0)
-        mapController.setCenter(startPoint)
+        val recordingPointsJson = requireContext().getSharedPreferences("ruta_data", Context.MODE_PRIVATE).getString(RECORDING_POINTS_KEY, null)
+        val isRecordingSaved = requireContext().getSharedPreferences("ruta_data", Context.MODE_PRIVATE).getBoolean("isRecordingHome", false)
+        var shouldCenterMadrid = true
+        if (isRecordingSaved && recordingPointsJson != null) {
+            // Hay grabación activa y puntos grabados, no centrar en Madrid
+            shouldCenterMadrid = false
+        }
+        if (shouldCenterMadrid) {
+            val startPoint = GeoPoint(40.4168, -3.7038)
+            mapController.setZoom(12.0)
+            mapController.setCenter(startPoint)
+        }
 
         btnStartRoute = view.findViewById(R.id.btnStartRoute)
         btnStopRoute = view.findViewById(R.id.btnStopRoute)
@@ -659,7 +676,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
     }
 
-    private fun updateUserLocation(geoPoint: GeoPoint) {
+    private fun updateUserLocation(geoPoint: GeoPoint, skipAnimation: Boolean = false) {
         if (isAdded && isResumed && mapView != null) {
             if (locationMarker == null) {
                 locationMarker = Marker(mapView)
@@ -675,7 +692,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
             // Si está grabando y no está en pausa, centrar el mapa en la ubicación del usuario
             if (isRecording && !isPaused) {
-                mapView.controller.animateTo(geoPoint)
+                if (skipAnimation) {
+                    mapView.controller.setCenter(geoPoint)
+                } else {
+                    mapView.controller.animateTo(geoPoint)
+                }
             }
         }
     }
@@ -918,6 +939,14 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         requestNotificationPermission() // Añade esta línea para solicitar el permiso
         loadRouteData()
         if (isRecording && !isPaused) {
+            // Centrar inmediatamente en la última ubicación conocida si existe
+            lastLocation?.let { location ->
+                val geoPoint = GeoPoint(location.latitude, location.longitude)
+                mapView.controller.setCenter(geoPoint)
+                mapView.controller.setZoom(17.0)
+            }
+            // Activar el flag para saltar la animación en el primer callback
+            skipNextLocationAnimation = true
             startLocationUpdates()
         }
     }
@@ -1009,6 +1038,19 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 val comment = etComment.text.toString()
                 val photoUrl = etPhotoUrl.text.toString()
                 drawPoiMarker(lat, lon, comment, photoUrl)
+                // Añadir a currentWaypoints para que se guarde con la ruta
+                if (currentWaypoints == null) currentWaypoints = mutableListOf()
+                val waypoint = WaypointInfo(
+                    geoPoint = GeoPoint(lat, lon),
+                    name = comment.ifEmpty { "Punto de Interés" },
+                    description = comment,
+                    photoUrl = photoUrl
+                )
+                // Si la lista es inmutable, la convertimos a mutable
+                if (currentWaypoints !is MutableList) {
+                    currentWaypoints = currentWaypoints?.toMutableList() ?: mutableListOf()
+                }
+                (currentWaypoints as MutableList<WaypointInfo>).add(waypoint)
                 Toast.makeText(requireContext(), "Punto de interés agregado", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Cancelar", null)
@@ -1126,6 +1168,10 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     }
                     recordingPolyline?.setPoints(currentPoints)
                     mapView.overlays.add(recordingPolyline)
+                    // Centrar el mapa en el último punto grabado
+                    val lastPoint = currentPoints!!.last()
+                    mapView.controller.setCenter(lastPoint)
+                    mapView.controller.setZoom(17.0)
                 }
             } else {
                 currentPoints = null
