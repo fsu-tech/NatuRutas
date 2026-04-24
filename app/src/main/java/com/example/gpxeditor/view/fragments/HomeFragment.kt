@@ -92,6 +92,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private val WAYPOINTS_KEY = "waypoints"
     private val ELEVATIONS_KEY = "elevations"
     private val CURRENT_ROUTE_NAME_KEY = "current_route_name"
+    private val RECORDING_POINTS_KEY = "recording_points"
 
     private var currentPoints: MutableList<GeoPoint>? = null
     private var currentWaypoints: List<WaypointInfo>? = null
@@ -250,6 +251,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         editor.remove(WAYPOINTS_KEY)
         editor.remove(ELEVATIONS_KEY)
         editor.remove(CURRENT_ROUTE_NAME_KEY)
+        editor.remove(RECORDING_POINTS_KEY)
         editor.apply()
     }
 
@@ -306,6 +308,14 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         editor.putString(WAYPOINTS_KEY, waypointsJson)
         editor.putString(ELEVATIONS_KEY, elevationsJson)
         editor.putString(CURRENT_ROUTE_NAME_KEY, routeName)
+
+        // Guardar también los puntos de la ruta grabada si existen
+        if (currentPoints != null && currentPoints!!.isNotEmpty()) {
+            val recordingPointsJson = gson.toJson(currentPoints)
+            editor.putString(RECORDING_POINTS_KEY, recordingPointsJson)
+        } else {
+            editor.remove(RECORDING_POINTS_KEY)
+        }
 
         editor.apply()
     }
@@ -1086,10 +1096,12 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val waypointsJson = sharedPreferences.getString(WAYPOINTS_KEY, null)
         val elevationsJson = sharedPreferences.getString(ELEVATIONS_KEY, null)
         val routeNameJson = sharedPreferences.getString(CURRENT_ROUTE_NAME_KEY, null)
+        val recordingPointsJson = sharedPreferences.getString(RECORDING_POINTS_KEY, null)
         Log.d("HomeFragment", "routePointsJson: $routePointsJson")
         Log.d("HomeFragment", "waypointsJson: $waypointsJson")
         Log.d("HomeFragment", "elevationsJson: $elevationsJson")
         Log.d("HomeFragment", "routeNameJson: $routeNameJson")
+        Log.d("HomeFragment", "recordingPointsJson: $recordingPointsJson")
         if (routePointsJson != null && waypointsJson != null && elevationsJson != null && routeNameJson != null) {
             val pointsType = object : TypeToken<List<GeoPoint>>() {}.type
             val waypointsType = object : TypeToken<List<WaypointInfo>>() {}.type
@@ -1102,15 +1114,19 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             Log.d("HomeFragment", "waypoints: $waypoints")
             Log.d("HomeFragment", "elevations: $elevations")
             Log.d("HomeFragment", "routeName: $routeName")
-            // Solo dibujar la polilínea naranja si hay grabación activa Y hay puntos grabados reales
-            if (isRecording && currentPoints != null && currentPoints!!.size > 1) {
-                recordingPolyline?.let { mapView.overlays.remove(it) }
-                recordingPolyline = Polyline().apply {
-                    outlinePaint.color = Color.parseColor("#FF9800")
-                    outlinePaint.strokeWidth = 8f
+            // Restaurar los puntos de la ruta grabada si existen
+            if (isRecording && recordingPointsJson != null) {
+                val recordingPointsType = object : TypeToken<MutableList<GeoPoint>>() {}.type
+                currentPoints = gson.fromJson(recordingPointsJson, recordingPointsType)
+                if (currentPoints != null && currentPoints!!.size > 1) {
+                    recordingPolyline?.let { mapView.overlays.remove(it) }
+                    recordingPolyline = Polyline().apply {
+                        outlinePaint.color = Color.parseColor("#FF9800")
+                        outlinePaint.strokeWidth = 8f
+                    }
+                    recordingPolyline?.setPoints(currentPoints)
+                    mapView.overlays.add(recordingPolyline)
                 }
-                recordingPolyline?.setPoints(currentPoints)
-                mapView.overlays.add(recordingPolyline)
             } else {
                 currentPoints = null
                 recordingPolyline?.let { mapView.overlays.remove(it) }
