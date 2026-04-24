@@ -680,10 +680,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             locationMarker?.position = geoPoint
             mapView.invalidate()
 
-            val currentPolyline = polyline
-            val distance = currentPolyline?.let { calculateDistanceToRoute(geoPoint, it.points) } ?: Float.MAX_VALUE
-
-            if (distance <= 1000) {
+            // Si está grabando y no está en pausa, centrar el mapa en la ubicación del usuario
+            if (isRecording && !isPaused) {
                 mapView.controller.animateTo(geoPoint)
             }
         }
