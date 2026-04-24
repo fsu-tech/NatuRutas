@@ -150,6 +150,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         mapView.setMultiTouchControls(true)
 
         dbHelper = DatabaseHelper(requireContext())
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
 
         val mapController = mapView.controller
         val startPoint = GeoPoint(40.4168, -3.7038)
@@ -172,20 +173,26 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
         btnSaveRoute.setOnClickListener {
             dbHelper.registrarEvento("Grabacion", "guardar_ruta", null)
-            guardarRutaEnBaseDeDatos()
+            mostrarDialogoGuardarRuta()
         }
         btnPauseRoute.setOnClickListener {
             dbHelper.registrarEvento("Grabacion", "pausar_grabacion", null)
             pauseRoute()
         }
+        btnResumeRoute.setOnClickListener {
+            dbHelper.registrarEvento("Grabacion", "reanudar_grabacion", null)
+            resumeRoute()
+        }
 
-        // Botón para eliminar la ruta cargada (GPX)
+        view.findViewById<Button?>(R.id.btnLoadGpx)?.setOnClickListener {
+            selectGpxFile()
+        }
+
         view.findViewById<Button?>(R.id.btnRemoveLoadedRoute)?.setOnClickListener {
             polyline?.let {
                 mapView.overlays.remove(it)
                 polyline = null
             }
-            // Eliminar marcadores asociados a la ruta cargada
             gpxOverlays.forEach { overlay ->
                 mapView.overlays.remove(overlay)
             }
@@ -193,47 +200,23 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             limpiarRutaEnSharedPreferences()
             Toast.makeText(requireContext(), "Ruta cargada eliminada", Toast.LENGTH_SHORT).show()
         }
-        btnResumeRoute.setOnClickListener {
-            dbHelper.registrarEvento("Grabacion", "reanudar_grabacion", null)
-            resumeRoute()
+
+        view.findViewById<Button?>(R.id.btn_add_poi)?.setOnClickListener {
+            addPointOfInterest()
         }
 
         updateUI(false)
 
-        view.findViewById<Button?>(R.id.btnLoadGpx)?.let { btnLoadGpx ->
-            btnLoadGpx.setOnClickListener {
-                dbHelper.registrarEvento("Inicio", "click_cargar_gpx", null)
-                selectGpxFile()
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    limpiarRecursos()
+                    requireActivity().finish()
+                }
             }
-        }
+        )
 
-        view.findViewById<Button?>(R.id.btnRouteInfo)?.let { btnSaveRoute ->
-            btnSaveRoute.text = "Guardar Ruta"
-            btnSaveRoute.setOnClickListener {
-                dbHelper.registrarEvento("Inicio", "click_guardar_ruta", currentRouteName ?: "Ruta sin nombre")
-                guardarRutaEnBaseDeDatos()
-            }
-        }
-
-        // Botón Agregar Punto de Interés
-        view.findViewById<Button?>(R.id.btn_add_poi)?.let { btnAddPoi ->
-            btnAddPoi.setOnClickListener {
-                dbHelper.registrarEvento("Grabacion", "click_añadir_poi", null)
-                addPointOfInterest()
-            }
-        }
-
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
-        requestLocationPermissions()
-
-        handleIntent()
-
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                limpiarRecursos()
-                requireActivity().finish()
-            }
-        })
         restoreRouteFromPrefs()
     }
 
@@ -936,6 +919,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         isRecording = true
         isPaused = false
         currentPoints = mutableListOf()
+        currentWaypoints = mutableListOf() // Inicializa como lista vacía
+        currentElevations = mutableListOf() // Inicializa como lista vacía
         recordingPolyline?.let { mapView.overlays.remove(it) }
         recordingPolyline = Polyline().apply {
             outlinePaint.color = Color.parseColor("#FF9800") // Naranja para la grabación
@@ -1170,6 +1155,30 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     companion object {
         private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 123
+    }
+
+    // Muestra un diálogo para introducir el nombre de la ruta antes de guardar
+    private fun mostrarDialogoGuardarRuta() {
+        val builder = AlertDialog.Builder(requireContext())
+        val dialogView = layoutInflater.inflate(R.layout.dialog_save_route, null)
+        val etRouteName = dialogView.findViewById<EditText>(R.id.et_route_name)
+        builder.setView(dialogView)
+        builder.setTitle("Guardar ruta")
+        builder.setPositiveButton("Guardar") { dialog, _ ->
+            val nombreRuta = etRouteName.text.toString().trim()
+            if (nombreRuta.isEmpty()) {
+                Toast.makeText(requireContext(), "Por favor, introduce un nombre para la ruta", Toast.LENGTH_SHORT).show()
+            } else {
+                currentRouteName = nombreRuta
+                guardarRutaEnBaseDeDatos()
+                dialog.dismiss()
+            }
+        }
+        builder.setNegativeButton("Cancelar") { dialog, _ ->
+            dialog.dismiss()
+        }
+        val dialog = builder.create()
+        dialog.show()
     }
 
     fun onNavigationAttempt(listener: NavigationListener, fragment: Fragment) {
