@@ -824,7 +824,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             startTime,
             endTime,
             puntosInteres,
-            "GPX"
+            tipoRutaSeleccionado // Guardar el tipo de ruta seleccionado
         )
         Log.d("guardarRuta", "Ruta insertada, rutaId=$rutaId")
 
@@ -1229,19 +1229,29 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 123
     }
 
+    // Variable para guardar el tipo de ruta seleccionado temporalmente
+    private var tipoRutaSeleccionado: String = "Otro"
+
     // Muestra un diálogo para introducir el nombre de la ruta antes de guardar
     private fun mostrarDialogoGuardarRuta() {
         val builder = AlertDialog.Builder(requireContext())
         val dialogView = layoutInflater.inflate(R.layout.dialog_save_route, null)
         val etRouteName = dialogView.findViewById<EditText>(R.id.et_route_name)
+        val spinner = dialogView.findViewById<android.widget.Spinner>(R.id.spinner_route_type)
+        val tiposRuta = listOf("Ciclismo", "Senderismo", "Motociclismo", "Coche", "Otro")
+        val adapter = android.widget.ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, tiposRuta)
+        spinner.adapter = adapter
+
         builder.setView(dialogView)
         builder.setTitle("Guardar ruta")
         builder.setPositiveButton("Guardar") { dialog, _ ->
             val nombreRuta = etRouteName.text.toString().trim()
+            val tipoRuta = spinner.selectedItem?.toString() ?: "Otro"
             if (nombreRuta.isEmpty()) {
                 Toast.makeText(requireContext(), "Por favor, introduce un nombre para la ruta", Toast.LENGTH_SHORT).show()
             } else {
                 currentRouteName = nombreRuta
+                tipoRutaSeleccionado = tipoRuta
                 guardarRutaEnBaseDeDatos()
                 dialog.dismiss()
             }
