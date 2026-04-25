@@ -557,19 +557,25 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         mapView.controller.setCenter(points.first())
         mapView.controller.setZoom(15.0)
 
+
+        // Usar drawables independientes para cada marcador
+        val startDrawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_map)?.mutate()
+        startDrawable?.setTint(Color.GREEN)
         val startMarker = Marker(mapView)
         startMarker.position = points.first()
         startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
         startMarker.title = "Inicio de la ruta"
-        startMarker.icon.setTint(Color.GREEN)
+        startMarker.icon = startDrawable
         gpxOverlays.add(startMarker)
         mapView.overlays.add(startMarker)
 
+        val endDrawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_map)?.mutate()
+        endDrawable?.setTint(Color.RED)
         val endMarker = Marker(mapView)
         endMarker.position = points.last()
         endMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
         endMarker.title = "Fin de la ruta"
-        endMarker.icon.setTint(Color.RED)
+        endMarker.icon = endDrawable
         gpxOverlays.add(endMarker)
         mapView.overlays.add(endMarker)
 
@@ -954,15 +960,16 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     }
 
     private fun startRecording() {
-        limpiarRecursos()
+        // Solo limpiar la polyline y datos de la grabación anterior, NO los overlays de la ruta cargada
+        recordingPolyline?.let { mapView.overlays.remove(it) }
+        recordingPolyline = null
+        currentPoints = mutableListOf()
+        currentWaypoints = mutableListOf() // Inicializa como lista vacía
+        currentElevations = mutableListOf() // Inicializa como lista vacía
         startTime = System.currentTimeMillis()
         totalPauseTime = 0
         isRecording = true
         isPaused = false
-        currentPoints = mutableListOf()
-        currentWaypoints = mutableListOf() // Inicializa como lista vacía
-        currentElevations = mutableListOf() // Inicializa como lista vacía
-        recordingPolyline?.let { mapView.overlays.remove(it) }
         recordingPolyline = Polyline().apply {
             outlinePaint.color = Color.parseColor("#FF9800") // Naranja para la grabación
             outlinePaint.strokeWidth = 8f

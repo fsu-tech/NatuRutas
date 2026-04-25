@@ -173,6 +173,27 @@ class RouteDetailActivity : AppCompatActivity() {
     private fun drawRouteOnMap(points: List<GeoPoint>) {
         val polyline = Polyline().apply { setPoints(points) }
         routeMapView.overlays.add(polyline)
+
+        // Añadir marcador de inicio (verde) y fin (rojo) si hay puntos
+        if (points.isNotEmpty()) {
+            val startDrawable = ContextCompat.getDrawable(this, R.drawable.ic_map)?.mutate()
+            startDrawable?.setTint(android.graphics.Color.GREEN)
+            val startMarker = Marker(routeMapView)
+            startMarker.position = points.first()
+            startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+            startMarker.title = "Inicio de la ruta"
+            startMarker.icon = startDrawable
+            routeMapView.overlays.add(startMarker)
+
+            val endDrawable = ContextCompat.getDrawable(this, R.drawable.ic_map)?.mutate()
+            endDrawable?.setTint(android.graphics.Color.RED)
+            val endMarker = Marker(routeMapView)
+            endMarker.position = points.last()
+            endMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+            endMarker.title = "Fin de la ruta"
+            endMarker.icon = endDrawable
+            routeMapView.overlays.add(endMarker)
+        }
     }
 
     private fun drawPoisOnMap(pois: List<PuntoInteres>) {
