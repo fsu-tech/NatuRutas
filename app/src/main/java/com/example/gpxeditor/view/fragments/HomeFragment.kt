@@ -96,7 +96,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     private var currentPoints: MutableList<GeoPoint>? = null
     private var currentWaypoints: List<WaypointInfo>? = null
-    private var currentElevations: List<Double>? = null
+    private var currentElevations: MutableList<Double>? = null // Ahora mutable para grabación
     private var currentRouteName: String? = null
     private lateinit var dbHelper: DatabaseHelper
     private var tiempoEntrada: Long = 0
@@ -115,7 +115,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     // Si está grabando y no está en pausa, añadir punto y actualizar polyline de grabación
                     if (isRecording && !isPaused) {
                         if (currentPoints == null) currentPoints = mutableListOf()
+                        if (currentElevations == null) currentElevations = mutableListOf()
                         currentPoints?.add(geoPoint)
+                        currentElevations?.add(location.altitude)
                         if (recordingPolyline == null) {
                             recordingPolyline = Polyline().apply {
                                 outlinePaint.color = Color.parseColor("#FF9800") // Naranja para la grabación
@@ -287,7 +289,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                         if (isActive && isAdded && view != null) {
                             currentPoints = null // Solo para grabación
                             currentWaypoints = waypoints
-                            currentElevations = elevations
+                            currentElevations = elevations.toMutableList()
                             currentRouteName = routeName
                             currentTimes = times
 
@@ -1179,7 +1181,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 recordingPolyline = null
             }
             currentWaypoints = waypoints
-            currentElevations = elevations
+            currentElevations = elevations.toMutableList()
             currentRouteName = routeName
             drawGpxRoute(points, waypoints)
         } else {

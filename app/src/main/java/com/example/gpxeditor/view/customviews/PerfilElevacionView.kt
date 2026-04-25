@@ -45,13 +45,23 @@ class PerfilElevacionView(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        if (altitudes.isEmpty()) return
+        android.util.Log.d("PerfilElevacionView", "onDraw: altitudes.size=${altitudes.size}, valores=${altitudes}")
+
+        if (altitudes.isEmpty()) {
+            android.util.Log.d("PerfilElevacionView", "onDraw: altitudes vacía")
+            return
+        }
 
         val maxAltitud = altitudes.maxOrNull() ?: 0.0
         val minAltitud = altitudes.minOrNull() ?: 0.0
         val rangeAltitud = maxAltitud - minAltitud
 
-        if (rangeAltitud == 0.0) return
+        android.util.Log.d("PerfilElevacionView", "onDraw: min=$minAltitud, max=$maxAltitud, rango=$rangeAltitud")
+
+        if (rangeAltitud == 0.0) {
+            android.util.Log.d("PerfilElevacionView", "onDraw: rango 0, no se dibuja")
+            return
+        }
 
         val points = mutableListOf<Float>()
         for (i in altitudes.indices) {
