@@ -1158,8 +1158,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             Log.d("HomeFragment", "waypoints: $waypoints")
             Log.d("HomeFragment", "elevations: $elevations")
             Log.d("HomeFragment", "routeName: $routeName")
-            // Restaurar los puntos de la ruta grabada si existen
-            if (isRecording && recordingPointsJson != null) {
+
+            // Restaurar SIEMPRE los puntos de la ruta grabada si existen
+            if (recordingPointsJson != null) {
                 val recordingPointsType = object : TypeToken<MutableList<GeoPoint>>() {}.type
                 currentPoints = gson.fromJson(recordingPointsJson, recordingPointsType)
                 if (currentPoints != null && currentPoints!!.size > 1) {
