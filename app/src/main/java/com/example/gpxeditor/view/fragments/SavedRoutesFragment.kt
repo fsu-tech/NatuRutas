@@ -30,6 +30,12 @@ class SavedRoutesFragment : Fragment(R.layout.fragment_saved_routes),
     override fun onResume() {
         super.onResume()
         tiempoEntrada = System.currentTimeMillis()
+        // Recargar la lista de rutas al volver al fragmento
+        if (::dbHelper.isInitialized && ::routesAdapter.isInitialized) {
+            val routes = dbHelper.getAllRoutes()
+            routesAdapter = RoutesAdapter(routes, this)
+            routesList.adapter = routesAdapter
+        }
     }
 
     override fun onPause() {
