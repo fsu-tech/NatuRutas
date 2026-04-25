@@ -81,7 +81,11 @@ class RecommendationsActivity : AppCompatActivity() {
         }
 
         tvSinDatos.visibility = View.VISIBLE
-        tvSinDatos.text = "Buscando rutas para ti en el catálogo…"
+        tvSinDatos.text = "Buscando tus rutas en Firestore…"
+
+        // Obtener usuario actual de preferencias
+        val prefs = getSharedPreferences(DatabaseHelper.PREFS_TELEMETRIA, MODE_PRIVATE)
+        val usuario = prefs.getString(DatabaseHelper.KEY_USUARIO, "desconocido")
 
         val tipo = perfil.tipoRutaDominante
         val hayPerfil = perfil.distanciaMedia > 2.0
@@ -89,16 +93,16 @@ class RecommendationsActivity : AppCompatActivity() {
         val maxDist = if (hayPerfil) perfil.distanciaMedia * 2.0 else Double.MAX_VALUE
 
         FirebaseFirestore.getInstance()
-            .collection("catalogo_rutas")
-            .limit(100)
+            .collection("rutas")
+            .whereEqualTo("usuario", usuario)
             .get()
             .addOnSuccessListener { snapshot ->
                 val rutas = if (!hayPerfil) {
                     snapshot.documents.take(10)
                 } else {
                     val filtradas = snapshot.documents.filter { doc ->
-                        val dist = doc.getDouble("distancia_km") ?: return@filter false
-                        val docTipo = doc.getString("tipo") ?: ""
+                        val dist = doc.getDouble("distancia") ?: 0.0
+                        val docTipo = doc.getString("tipoRuta") ?: ""
                         val tipoOk = tipo == null || docTipo.lowercase() == tipo.lowercase()
                         val distOk = dist in minDist..maxDist
                         tipoOk && distOk
@@ -110,18 +114,16 @@ class RecommendationsActivity : AppCompatActivity() {
 
                 if (rutas.isEmpty()) {
                     tvSinDatos.visibility = View.VISIBLE
-                    tvSinDatos.text = "Sin rutas (documentos en catálogo: ${snapshot.documents.size})"
+                    tvSinDatos.text = "Sin rutas para este usuario."
                 } else {
                     rutas.forEach { doc ->
                         val nombre = doc.getString("nombre") ?: "Ruta sin nombre"
-                        val docTipo = doc.getString("tipo") ?: "—"
-                        val dist = doc.getDouble("distancia_km")?.let { "${"%.1f".format(it)} km" } ?: "—"
-                        val zona = doc.getString("zona") ?: "—"
-                        val dificultad = doc.getString("dificultad") ?: "—"
-                        val desnivel = doc.getLong("desnivel_m")?.let { "${it} m" } ?: "—"
+                        val docTipo = doc.getString("tipoRuta") ?: "—"
+                        val dist = doc.getDouble("distancia")?.let { "${"%.1f".format(it)} km" } ?: "—"
+                        val fecha = doc.getString("fecha") ?: "—"
 
                         val tvRuta = TextView(this).apply {
-                            text = "📍 $nombre\n   $docTipo · $dist · ↑$desnivel\n   $zona · Dificultad: $dificultad"
+                            text = "📍 $nombre\n   $docTipo · $dist\n   Fecha: $fecha"
                             textSize = 15f
                             setPadding(0, 16, 0, 16)
                         }

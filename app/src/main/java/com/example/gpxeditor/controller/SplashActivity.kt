@@ -53,8 +53,44 @@ class SplashActivity : AppCompatActivity() {
                     Toast.makeText(this, "El nombre no puede estar vacío", Toast.LENGTH_SHORT).show()
                     pedirNombre(prefs) // Volver a preguntar
                 } else {
-                    prefs.edit().putString(DatabaseHelper.KEY_USUARIO, nombre).apply()
-                    generarSesionYContinuar(prefs, nombre)
+                    // Buscar usuario en Firestore
+                    val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    firestore.collection("usuarios")
+                        .whereEqualTo("nombre", nombre)
+                        .get()
+                        .addOnSuccessListener { result ->
+                            if (!result.isEmpty) {
+                                // Usuario existe, usar su usuarioId
+                                val usuarioDoc = result.documents[0]
+                                val usuarioId = usuarioDoc.getString("usuarioId") ?: java.util.UUID.randomUUID().toString()
+                                prefs.edit()
+                                    .putString(DatabaseHelper.KEY_USUARIO, nombre)
+                                    .putString(DatabaseHelper.KEY_USUARIO_ID, usuarioId)
+                                    .apply()
+                                generarSesionYContinuar(prefs, nombre)
+                            } else {
+                                // Usuario no existe, crear uno nuevo
+                                val usuarioId = java.util.UUID.randomUUID().toString()
+                                val usuarioMap = hashMapOf(
+                                    "nombre" to nombre,
+                                    "usuarioId" to usuarioId
+                                )
+                                firestore.collection("usuarios").add(usuarioMap)
+                                    .addOnSuccessListener {
+                                        prefs.edit()
+                                            .putString(DatabaseHelper.KEY_USUARIO, nombre)
+                                            .putString(DatabaseHelper.KEY_USUARIO_ID, usuarioId)
+                                            .apply()
+                                        generarSesionYContinuar(prefs, nombre)
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Toast.makeText(this, "Error creando usuario: ${e.message}", Toast.LENGTH_LONG).show()
+                                    }
+                            }
+                        }
+                        .addOnFailureListener { e ->
+                            Toast.makeText(this, "Error buscando usuario: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
                 }
             }
             .show()

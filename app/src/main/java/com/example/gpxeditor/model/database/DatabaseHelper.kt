@@ -22,6 +22,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         const val PREFS_TELEMETRIA = "telemetria_prefs"
         const val KEY_USUARIO = "usuario_nombre"
         const val KEY_SESION = "sesion_id"
+        const val KEY_USUARIO_ID = "usuarioId" // Clave para el ID único del usuario
 
         // EventosUsuario Table
         const val TABLE_EVENTOS = "EventosUsuario"
@@ -184,6 +185,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
     fun registrarEvento(pantalla: String, evento: String, detalle: String? = null) {
         val prefs = context.getSharedPreferences(PREFS_TELEMETRIA, android.content.Context.MODE_PRIVATE)
         val usuario = prefs.getString(KEY_USUARIO, "desconocido")
+        val usuarioId = prefs.getString(KEY_USUARIO_ID, "desconocido")
         val sesionId = prefs.getString(KEY_SESION, "sin_sesion")
         val db = writableDatabase
         val values = ContentValues().apply {
@@ -202,11 +204,16 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         val eventoFirestore = hashMapOf(
             "timestamp" to System.currentTimeMillis(),
             "usuario" to usuario,
+            "usuarioId" to usuarioId,
             "sesion_id" to sesionId,
             "pantalla" to pantalla,
             "evento" to evento,
             "detalle" to detalle
         )
+        // Si el detalle es un id de ruta, también lo añadimos como campo rutaId
+        detalle?.toLongOrNull()?.let { rutaId ->
+            eventoFirestore["rutaId"] = rutaId
+        }
         firestore.collection("eventos").add(eventoFirestore)
     }
 
@@ -230,6 +237,13 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
     ): Long {
         val db = writableDatabase
         var rutaId = -1L
+
+        // Obtener usuario y usuarioId de preferencias
+        val prefs = context.getSharedPreferences(PREFS_TELEMETRIA, android.content.Context.MODE_PRIVATE)
+        var usuario = prefs.getString(KEY_USUARIO, "desconocido")
+        if (usuario == null || usuario.isBlank()) usuario = "desconocido"
+        var usuarioId = prefs.getString(KEY_USUARIO_ID, null)
+        if (usuarioId == null || usuarioId.isBlank()) usuarioId = "desconocido"
 
         db.beginTransaction()
         Log.d("DatabaseHelper", "insertRoute: Transaccion iniciada")
@@ -297,15 +311,21 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             Log.d("DatabaseHelper", "insertRoute: Transaccion finalizada")
         }
         Log.d("DatabaseHelper", "insertRoute: RutaId final: $rutaId")
+
         // --- SUBIDA AUTOMÁTICA A FIRESTORE ---
         if (rutaId != -1L) {
             val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            // Mostrar usuarioId en un Toast para depuración visual
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                android.widget.Toast.makeText(context, "usuarioId: $usuarioId", android.widget.Toast.LENGTH_LONG).show()
+            }
             // Subir ruta
             val rutaMap = hashMapOf(
                 "rutaId" to rutaId,
                 "nombre" to nombre,
                 "fecha" to fecha,
-                "tipoRuta" to tipoRuta
+                "tipoRuta" to tipoRuta,
+                "usuarioId" to usuarioId
             )
             firestore.collection("rutas").document(rutaId.toString()).set(rutaMap)
                 .addOnSuccessListener {
