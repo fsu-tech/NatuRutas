@@ -1,3 +1,4 @@
+
 package com.example.gpxeditor.view.fragments
 
 import android.Manifest
@@ -101,6 +102,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private var currentRouteName: String? = null
     private var currentDistance: Double = 0.0
     private lateinit var dbHelper: DatabaseHelper
+    private var userMovedMap = false
     private var tiempoEntrada: Long = 0
 
     // Flag para evitar animación en el primer callback tras volver a la pestaña
@@ -138,45 +140,45 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 }
             }
         }
+    }
 
-        /** Guarda los puntos y elevaciones de la grabación en SharedPreferences */
-        private fun saveRecordingPoints() {
-            val editor = sharedPreferences.edit()
-            if (!currentPoints.isNullOrEmpty()) {
-                editor.putString(RECORDING_POINTS_KEY, gson.toJson(currentPoints))
-            }
-            if (!currentElevations.isNullOrEmpty()) {
-                editor.putString(RECORDING_ELEVATIONS_KEY, gson.toJson(currentElevations))
-            }
-            editor.apply()
+    /** Guarda los puntos y elevaciones de la grabación en SharedPreferences */
+    private fun saveRecordingPoints() {
+        val editor = sharedPreferences.edit()
+        if (!currentPoints.isNullOrEmpty()) {
+            editor.putString(RECORDING_POINTS_KEY, gson.toJson(currentPoints))
         }
-
-        /** Restaura los puntos y elevaciones de la grabación desde SharedPreferences */
-        private fun restoreRecordingPoints() {
-            val recordingPointsJson = sharedPreferences.getString(RECORDING_POINTS_KEY, null)
-            val recordingElevationsJson = sharedPreferences.getString(RECORDING_ELEVATIONS_KEY, null)
-            if (!recordingPointsJson.isNullOrEmpty()) {
-                val type = object : TypeToken<MutableList<GeoPoint>>() {}.type
-                currentPoints = gson.fromJson(recordingPointsJson, type)
-            } else {
-                currentPoints = mutableListOf()
-            }
-            if (!recordingElevationsJson.isNullOrEmpty()) {
-                val type = object : TypeToken<MutableList<Double>>() {}.type
-                currentElevations = gson.fromJson(recordingElevationsJson, type)
-            } else {
-                currentElevations = mutableListOf()
-            }
+        if (!currentElevations.isNullOrEmpty()) {
+            editor.putString(RECORDING_ELEVATIONS_KEY, gson.toJson(currentElevations))
         }
+        editor.apply()
+    }
 
-        /** Recalcula la distancia total usando todos los puntos grabados */
-        private fun recalculateDistanceFromPoints() {
-            currentDistance = 0.0
-            val points = currentPoints
-            if (points != null && points.size > 1) {
-                for (i in 1 until points.size) {
-                    currentDistance += points[i - 1].distanceToAsDouble(points[i])
-                }
+    /** Restaura los puntos y elevaciones de la grabación desde SharedPreferences */
+    private fun restoreRecordingPoints() {
+        val recordingPointsJson = sharedPreferences.getString(RECORDING_POINTS_KEY, null)
+        val recordingElevationsJson = sharedPreferences.getString(RECORDING_ELEVATIONS_KEY, null)
+        if (!recordingPointsJson.isNullOrEmpty()) {
+            val type = object : TypeToken<MutableList<GeoPoint>>() {}.type
+            currentPoints = gson.fromJson(recordingPointsJson, type)
+        } else {
+            currentPoints = mutableListOf()
+        }
+        if (!recordingElevationsJson.isNullOrEmpty()) {
+            val type = object : TypeToken<MutableList<Double>>() {}.type
+            currentElevations = gson.fromJson(recordingElevationsJson, type)
+        } else {
+            currentElevations = mutableListOf()
+        }
+    }
+
+    /** Recalcula la distancia total usando todos los puntos grabados */
+    private fun recalculateDistanceFromPoints() {
+        currentDistance = 0.0
+        val points = currentPoints
+        if (points != null && points.size > 1) {
+            for (i in 1 until points.size) {
+                currentDistance += points[i - 1].distanceToAsDouble(points[i])
             }
         }
     }
@@ -202,6 +204,18 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         mapView = view.findViewById(R.id.mapView)
         mapView.setTileSource(TileSourceFactory.MAPNIK)
         mapView.setMultiTouchControls(true)
+
+        // Listener para detectar si el usuario mueve o hace zoom en el mapa (DESPUÉS de inicializar mapView)
+        mapView.setMapListener(object : org.osmdroid.events.MapListener {
+            override fun onScroll(event: org.osmdroid.events.ScrollEvent?): Boolean {
+                userMovedMap = true
+                return false
+            }
+            override fun onZoom(event: org.osmdroid.events.ZoomEvent?): Boolean {
+                userMovedMap = true
+                return false
+            }
+        })
 
         dbHelper = DatabaseHelper(requireContext())
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
@@ -742,13 +756,10 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             locationMarker?.position = geoPoint
             mapView.invalidate()
 
-            // Si está grabando y no está en pausa, centrar el mapa en la ubicación del usuario
-            if (isRecording && !isPaused) {
-                if (skipAnimation) {
-                    mapView.controller.setCenter(geoPoint)
-                } else {
-                    mapView.controller.animateTo(geoPoint)
-                }
+            // Si está grabando y no está en pausa, centrar el mapa en la ubicación del usuario y ajustar zoom si el usuario no ha tocado el mapa
+            if (isRecording && !isPaused && !userMovedMap) {
+                mapView.controller.setCenter(geoPoint)
+                mapView.controller.setZoom(17.0)
             }
         }
     }
@@ -1023,6 +1034,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         Toast.makeText(requireContext(), "Grabación iniciada", Toast.LENGTH_SHORT).show()
         updateUI(true)
         startLocationUpdates()
+        userMovedMap = false // Al iniciar grabación, el mapa sigue al usuario
     }
 
     private fun stopRecording() {
@@ -1216,7 +1228,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 }
                 recordingPolyline?.setPoints(currentPoints)
                 mapView.overlays.add(recordingPolyline)
-                // Centrar el mapa en el último punto grabado
+                // Centrar el mapa en el último punto grabado y restaurar zoom
                 val lastPoint = currentPoints!!.last()
                 mapView.controller.setCenter(lastPoint)
                 mapView.controller.setZoom(17.0)
@@ -1239,6 +1251,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             recordingPolyline = null
             currentPoints = mutableListOf()
             currentDistance = 0.0
+            // Restaurar zoom y centro por defecto
+            mapView.controller.setZoom(12.0)
+            mapView.controller.setCenter(GeoPoint(40.4168, -3.7038))
             mapView.invalidate()
         }
     }
