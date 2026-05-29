@@ -93,11 +93,13 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private val ELEVATIONS_KEY = "elevations"
     private val CURRENT_ROUTE_NAME_KEY = "current_route_name"
     private val RECORDING_POINTS_KEY = "recording_points"
+    private val RECORDING_ELEVATIONS_KEY = "recording_elevations"
 
     private var currentPoints: MutableList<GeoPoint>? = null
     private var currentWaypoints: List<WaypointInfo>? = null
     private var currentElevations: MutableList<Double>? = null // Ahora mutable para grabación
     private var currentRouteName: String? = null
+    private var currentDistance: Double = 0.0
     private lateinit var dbHelper: DatabaseHelper
     private var tiempoEntrada: Long = 0
 
@@ -127,11 +129,53 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                         }
                         recordingPolyline?.setPoints(currentPoints)
                         mapView.invalidate()
+                        saveRecordingPoints() // Guardar puntos y elevaciones en cada nueva ubicación
                     }
                     // Si el flag está activo, lo desactivamos tras el primer callback
                     if (skipNextLocationAnimation) {
                         skipNextLocationAnimation = false
                     }
+                }
+            }
+        }
+
+        /** Guarda los puntos y elevaciones de la grabación en SharedPreferences */
+        private fun saveRecordingPoints() {
+            val editor = sharedPreferences.edit()
+            if (!currentPoints.isNullOrEmpty()) {
+                editor.putString(RECORDING_POINTS_KEY, gson.toJson(currentPoints))
+            }
+            if (!currentElevations.isNullOrEmpty()) {
+                editor.putString(RECORDING_ELEVATIONS_KEY, gson.toJson(currentElevations))
+            }
+            editor.apply()
+        }
+
+        /** Restaura los puntos y elevaciones de la grabación desde SharedPreferences */
+        private fun restoreRecordingPoints() {
+            val recordingPointsJson = sharedPreferences.getString(RECORDING_POINTS_KEY, null)
+            val recordingElevationsJson = sharedPreferences.getString(RECORDING_ELEVATIONS_KEY, null)
+            if (!recordingPointsJson.isNullOrEmpty()) {
+                val type = object : TypeToken<MutableList<GeoPoint>>() {}.type
+                currentPoints = gson.fromJson(recordingPointsJson, type)
+            } else {
+                currentPoints = mutableListOf()
+            }
+            if (!recordingElevationsJson.isNullOrEmpty()) {
+                val type = object : TypeToken<MutableList<Double>>() {}.type
+                currentElevations = gson.fromJson(recordingElevationsJson, type)
+            } else {
+                currentElevations = mutableListOf()
+            }
+        }
+
+        /** Recalcula la distancia total usando todos los puntos grabados */
+        private fun recalculateDistanceFromPoints() {
+            currentDistance = 0.0
+            val points = currentPoints
+            if (points != null && points.size > 1) {
+                for (i in 1 until points.size) {
+                    currentDistance += points[i - 1].distanceToAsDouble(points[i])
                 }
             }
         }
@@ -927,6 +971,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val segundos = (System.currentTimeMillis() - tiempoEntrada) / 1000
         dbHelper.registrarEvento("Inicio", "tiempo_en_pantalla", "${segundos}s")
         saveRouteData()
+        saveRecordingPoints() // Guardar puntos y elevaciones al pausar
         if (requireActivity().isFinishing) {
             isAppClosing = true
             limpiarRecursos()
@@ -944,7 +989,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         Log.d("HomeFragment", "onResume called")
         isNavigating = false
         restoreRouteFromPrefs()
-        requestNotificationPermission() // Añade esta línea para solicitar el permiso
+        requestNotificationPermission()
         loadRouteData()
         if (isRecording && !isPaused) {
             // Centrar inmediatamente en la última ubicación conocida si existe
@@ -953,7 +998,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 mapView.controller.setCenter(geoPoint)
                 mapView.controller.setZoom(17.0)
             }
-            // Activar el flag para saltar la animación en el primer callback
             skipNextLocationAnimation = true
             startLocationUpdates()
         }
@@ -1147,12 +1191,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val waypointsJson = sharedPreferences.getString(WAYPOINTS_KEY, null)
         val elevationsJson = sharedPreferences.getString(ELEVATIONS_KEY, null)
         val routeNameJson = sharedPreferences.getString(CURRENT_ROUTE_NAME_KEY, null)
-        val recordingPointsJson = sharedPreferences.getString(RECORDING_POINTS_KEY, null)
-        Log.d("HomeFragment", "routePointsJson: $routePointsJson")
-        Log.d("HomeFragment", "waypointsJson: $waypointsJson")
-        Log.d("HomeFragment", "elevationsJson: $elevationsJson")
-        Log.d("HomeFragment", "routeNameJson: $routeNameJson")
-        Log.d("HomeFragment", "recordingPointsJson: $recordingPointsJson")
+        // Restaurar puntos y elevaciones de grabación
+        restoreRecordingPoints()
+
         if (routePointsJson != null && waypointsJson != null && elevationsJson != null && routeNameJson != null) {
             val pointsType = object : TypeToken<List<GeoPoint>>() {}.type
             val waypointsType = object : TypeToken<List<WaypointInfo>>() {}.type
@@ -1166,27 +1207,25 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             Log.d("HomeFragment", "elevations: $elevations")
             Log.d("HomeFragment", "routeName: $routeName")
 
-            // Restaurar SIEMPRE los puntos de la ruta grabada si existen
-            if (recordingPointsJson != null) {
-                val recordingPointsType = object : TypeToken<MutableList<GeoPoint>>() {}.type
-                currentPoints = gson.fromJson(recordingPointsJson, recordingPointsType)
-                if (currentPoints != null && currentPoints!!.size > 1) {
-                    recordingPolyline?.let { mapView.overlays.remove(it) }
-                    recordingPolyline = Polyline().apply {
-                        outlinePaint.color = Color.parseColor("#FF9800")
-                        outlinePaint.strokeWidth = 8f
-                    }
-                    recordingPolyline?.setPoints(currentPoints)
-                    mapView.overlays.add(recordingPolyline)
-                    // Centrar el mapa en el último punto grabado
-                    val lastPoint = currentPoints!!.last()
-                    mapView.controller.setCenter(lastPoint)
-                    mapView.controller.setZoom(17.0)
+            // Restaurar polyline de grabación si hay puntos
+            if (currentPoints != null && currentPoints!!.size > 1) {
+                recordingPolyline?.let { mapView.overlays.remove(it) }
+                recordingPolyline = Polyline().apply {
+                    outlinePaint.color = Color.parseColor("#FF9800")
+                    outlinePaint.strokeWidth = 8f
                 }
+                recordingPolyline?.setPoints(currentPoints)
+                mapView.overlays.add(recordingPolyline)
+                // Centrar el mapa en el último punto grabado
+                val lastPoint = currentPoints!!.last()
+                mapView.controller.setCenter(lastPoint)
+                mapView.controller.setZoom(17.0)
+                recalculateDistanceFromPoints()
             } else {
-                currentPoints = null
+                currentPoints = mutableListOf()
                 recordingPolyline?.let { mapView.overlays.remove(it) }
                 recordingPolyline = null
+                currentDistance = 0.0
             }
             currentWaypoints = waypoints
             currentElevations = elevations.toMutableList()
@@ -1198,6 +1237,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             // Elimina la polyline de grabación si no hay datos
             recordingPolyline?.let { mapView.overlays.remove(it) }
             recordingPolyline = null
+            currentPoints = mutableListOf()
+            currentDistance = 0.0
             mapView.invalidate()
         }
     }

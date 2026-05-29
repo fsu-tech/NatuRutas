@@ -182,7 +182,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         }
     }
 
-    fun registrarEvento(pantalla: String, evento: String, detalle: String? = null) {
+    fun registrarEvento(pantalla: String, evento: String, detalle: String? = null, rutaId: Long? = null) {
         val prefs = context.getSharedPreferences(PREFS_TELEMETRIA, android.content.Context.MODE_PRIVATE)
         val usuario = prefs.getString(KEY_USUARIO, "desconocido")
         val usuarioId = prefs.getString(KEY_USUARIO_ID, "desconocido")
@@ -210,8 +210,8 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "evento" to evento,
             "detalle" to detalle
         )
-        // Si el detalle es un id de ruta, también lo añadimos como campo rutaId
-        detalle?.toLongOrNull()?.let { rutaId ->
+        // Guardar rutaId explícito si se pasa
+        if (rutaId != null) {
             eventoFirestore["rutaId"] = rutaId
         }
         firestore.collection("eventos").add(eventoFirestore)
