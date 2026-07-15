@@ -27,9 +27,7 @@ class DurationChartView(context: Context, private val duration1: String, private
     }
 
     private val textPaint = Paint().apply {
-        color = if (isDarkMode) ContextCompat.getColor(context, R.color.chart_text_dark) else ContextCompat.getColor(context,
-            R.color.chart_text_light
-        )
+        color = ContextCompat.getColor(context, R.color.naturutas_on_surface)
         textSize = 30f
         textAlign = Paint.Align.CENTER
     }

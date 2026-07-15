@@ -7,7 +7,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import android.content.res.Configuration
 import com.example.gpxeditor.R
 
 class PerfilElevacionView(
@@ -17,8 +16,6 @@ class PerfilElevacionView(
     color: Int
 ) : View(context) {
 
-    private val isDarkMode = isDarkMode(context)
-
     private val paint = Paint().apply {
         this.color = color
         style = Paint.Style.STROKE
@@ -26,9 +23,7 @@ class PerfilElevacionView(
     }
 
     private val textPaint = Paint().apply {
-        this.color = if (isDarkMode) ContextCompat.getColor(context, R.color.chart_text_dark) else ContextCompat.getColor(context,
-            R.color.chart_text_light
-        )
+        this.color = ContextCompat.getColor(context, R.color.naturutas_on_surface)
         textSize = 30f
         textAlign = Paint.Align.CENTER
     }
@@ -86,12 +81,5 @@ class PerfilElevacionView(
             Toast.makeText(context, "Altura: ${altitude} m", Toast.LENGTH_SHORT).show()
         }
         return true
-    }
-
-    private fun isDarkMode(context: Context): Boolean {
-        return when (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
-            Configuration.UI_MODE_NIGHT_YES -> true
-            else -> false
-        }
     }
 }
