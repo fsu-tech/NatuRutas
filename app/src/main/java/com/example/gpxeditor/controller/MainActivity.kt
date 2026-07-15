@@ -35,6 +35,10 @@ class MainActivity : AppCompatActivity(), HomeFragment.NavigationListener, Share
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        if (savedInstanceState == null) {
+            discardStoppedRecordingDraft()
+        }
+
         btnPanelProfesionalAjustes = findViewById(R.id.btnPanelProfesionalAjustes)
         btnPanelProfesionalAjustes.setOnClickListener {
             startActivity(Intent(this, com.example.gpxeditor.controller.BusinessInsightsActivity::class.java))
@@ -86,6 +90,30 @@ class MainActivity : AppCompatActivity(), HomeFragment.NavigationListener, Share
 
         handleIntent()
         aplicarPreferenciasIniciales()
+    }
+
+    /**
+     * Conserva una grabación activa para poder recuperarla si la app se cierra por accidente,
+     * pero descarta una ruta que el usuario ya detuvo y no llegó a guardar.
+     *
+     * Se ejecuta únicamente en un arranque nuevo de MainActivity, no al cambiar de pestaña ni
+     * durante una recreación de la pantalla, para que la ruta detenida pueda guardarse mientras
+     * la sesión actual siga abierta.
+     */
+    private fun discardStoppedRecordingDraft() {
+        val routePreferences = getSharedPreferences("ruta_data", MODE_PRIVATE)
+        if (routePreferences.getBoolean("isRecordingHome", false)) return
+
+        routePreferences.edit()
+            .remove("recording_points")
+            .remove("recording_elevations")
+            .remove("recording_waypoints")
+            .remove("isPausedHome")
+            .remove("startTimeHome")
+            .remove("endTimeHome")
+            .remove("pauseStartTimeHome")
+            .remove("totalPauseTimeHome")
+            .apply()
     }
 
     private fun loadFragment(fragment: Fragment, tag: String? = null) {
