@@ -80,7 +80,7 @@ class MainActivity : AppCompatActivity(), HomeFragment.NavigationListener, Share
             bottomNavigationView.selectedItemId = R.id.nav_home
             loadFragment(com.example.gpxeditor.view.fragments.HomeFragment())
             android.os.Handler(mainLooper).postDelayed({
-                android.widget.Toast.makeText(this, "Pulsa 'Crear ruta' para empezar a grabar tu recorrido", android.widget.Toast.LENGTH_LONG).show()
+                android.widget.Toast.makeText(this, "Pulsa 'Iniciar ruta' para empezar a grabar tu recorrido", android.widget.Toast.LENGTH_LONG).show()
             }, 600)
         }
 
@@ -119,18 +119,32 @@ class MainActivity : AppCompatActivity(), HomeFragment.NavigationListener, Share
             .show()
     }
 
-    private fun handleIntent() {
-        val intent = intent
-        val action = intent.action
-        val data = intent.data
-
-        if (Intent.ACTION_VIEW == action && data != null) {
-            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                passUriToFragment(data)
-            } else {
-                ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE), READ_STORAGE_PERMISSION_CODE)
-            }
+    private fun handleIntent(sourceIntent: Intent = intent) {
+        val action = sourceIntent.action
+        val data = when (action) {
+            Intent.ACTION_VIEW -> sourceIntent.data
+            Intent.ACTION_SEND -> sourceIntent.getSharedUri()
+            else -> null
         }
+
+        if (data != null) {
+            passUriToFragment(data)
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun Intent.getSharedUri(): Uri? {
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+        } else {
+            getParcelableExtra(Intent.EXTRA_STREAM) as? Uri
+        } ?: clipData?.getItemAt(0)?.uri
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -156,8 +170,17 @@ class MainActivity : AppCompatActivity(), HomeFragment.NavigationListener, Share
     }
 
     private fun passUriToFragment(uri: Uri) {
+        val bottomNavigationView: BottomNavigationView = findViewById(R.id.bottom_navigation)
+        bottomNavigationView.selectedItemId = R.id.nav_home
+        supportFragmentManager.executePendingTransactions()
+
         val homeFragment = supportFragmentManager.findFragmentById(R.id.fragment_container) as? HomeFragment
-        homeFragment?.openGpxFile(uri)
+            ?: HomeFragment().also {
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, it)
+                    .commitNow()
+            }
+        homeFragment.openGpxFile(uri)
     }
 
     fun changeFragmentWithConfirmation(fragment: Fragment) {

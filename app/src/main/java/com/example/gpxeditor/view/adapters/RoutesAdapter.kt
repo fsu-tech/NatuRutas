@@ -64,8 +64,11 @@ class RoutesAdapter(private val routes: List<Route>, private val listener: OnIte
                 (currentListener as? SavedRoutesFragment)?.exportRoutesToGpx(listOf(currentRoute))
                 true
             }
+            menu?.add(0, 3, 0, "Compartir Ruta")?.setOnMenuItemClickListener {
+                (currentListener as? SavedRoutesFragment)?.shareRoutesAsGpx(listOf(currentRoute))
+                true
+            }
         }
 
             }
         }
-
