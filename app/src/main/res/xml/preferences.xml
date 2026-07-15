@@ -2,28 +2,46 @@
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory app:title="General">
+    <Preference
+        app:layout="@layout/preference_header_naturutas"
+        app:selectable="false"
+        app:summary="Configura NatuRutas a tu manera."
+        app:title="Ajustes" />
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:layout="@layout/preference_category_naturutas"
+        app:title="General">
 
         <SwitchPreferenceCompat
             app:key="dark_mode"
-            app:title="Modo Oscuro"
-            app:summary="Activar/desactivar el modo oscuro" />
+            app:iconSpaceReserved="false"
+            app:layout="@layout/preference_card_naturutas"
+            app:summary="Activar o desactivar el modo oscuro"
+            app:title="Modo oscuro" />
 
         <EditTextPreference
-            app:key="user_name"
-            app:title="Nombre de Usuario"
-            app:summary="Introduce tu nombre de usuario"
             android:hint="Introduce tu nombre de usuario"
-            android:inputType="textPersonName" />
+            android:inputType="textPersonName"
+            app:iconSpaceReserved="false"
+            app:key="user_name"
+            app:layout="@layout/preference_card_naturutas"
+            app:summary="Introduce tu nombre de usuario"
+            app:title="Nombre de usuario" />
 
     </PreferenceCategory>
 
-    <PreferenceCategory app:title="Notificaciones">
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:layout="@layout/preference_category_naturutas"
+        app:title="Notificaciones">
 
         <CheckBoxPreference
+            app:iconSpaceReserved="false"
             app:key="notifications_enabled"
-            app:title="Activar Notificaciones"
-            app:summary="Recibir notificaciones de la aplicación" />
+            app:layout="@layout/preference_card_naturutas"
+            app:summary="Recibir notificaciones de la aplicación"
+            app:title="Activar notificaciones" />
 
     </PreferenceCategory>
 
