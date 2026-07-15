@@ -1,8 +1,15 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.Gpxeditor" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/naturutas_primary</item>
+        <item name="colorOnPrimary">@color/naturutas_on_primary</item>
+        <item name="colorSurface">@color/naturutas_surface</item>
+        <item name="colorOnSurface">@color/naturutas_on_surface</item>
+        <item name="colorOutline">@color/naturutas_outline</item>
+        <item name="android:statusBarColor">@color/naturutas_surface</item>
+        <item name="android:navigationBarColor">@color/naturutas_surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
 
     <style name="Theme.Gpxeditor" parent="Base.Theme.Gpxeditor" />

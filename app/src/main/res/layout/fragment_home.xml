@@ -1,83 +1,202 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     tools:context=".view.fragments.HomeFragment">
-
-
-
-    <Button
-        android:id="@+id/btnLoadGpx"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="10dp"
-        android:text="Cargar GPX" />
-
-    <Button
-        android:id="@+id/btnRemoveLoadedRoute"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="10dp"
-        android:text="Eliminar ruta cargada" />
-
-    <!-- Botones de grabación abajo, igual que en Crear Ruta -->
-    <LinearLayout
-        android:id="@+id/buttonContainer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginBottom="80dp"
-        android:background="@android:color/transparent"
-        android:layout_gravity="center_horizontal">
-
-        <Button
-            android:id="@+id/btnStartRoute"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Iniciar Ruta"/>
-
-        <Button
-            android:id="@+id/btnStopRoute"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Detener Ruta"
-            android:visibility="gone"/>
-
-        <Button
-            android:id="@+id/btnSaveRoute"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Guardar Ruta"
-            android:visibility="gone"/>
-
-
-        <Button
-            android:id="@+id/btnPauseRoute"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Pausar"
-            android:visibility="gone"/>
-
-        <Button
-            android:id="@+id/btnResumeRoute"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Reanudar"
-            android:visibility="gone"/>
-
-        <Button
-            android:id="@+id/btn_add_poi"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Agregar Punto de Interés" />
-    </LinearLayout>
 
     <org.osmdroid.views.MapView
         android:id="@+id/mapView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-</LinearLayout>
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/homeTopCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="12dp"
+        app:cardBackgroundColor="@color/naturutas_surface"
+        app:cardCornerRadius="22dp"
+        app:cardElevation="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:strokeColor="@color/naturutas_outline"
+        app:strokeWidth="1dp">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="12dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="4dp"
+                android:paddingBottom="2dp"
+                android:text="NatuRutas"
+                android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+                android:textColor="@color/naturutas_primary"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLoadGpx"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:minWidth="0dp"
+                    android:text="Cargar GPX"
+                    android:textAllCaps="false"
+                    android:textColor="@color/naturutas_primary"
+                    app:icon="@drawable/ic_export"
+                    app:iconGravity="textStart"
+                    app:iconTint="@color/naturutas_primary" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRemoveLoadedRoute"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:minWidth="0dp"
+                    android:text="Eliminar GPX"
+                    android:textAllCaps="false"
+                    android:textColor="@color/naturutas_secondary_text"
+                    app:icon="@drawable/ic_delete"
+                    app:iconGravity="textStart"
+                    app:iconTint="@color/naturutas_secondary_text" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/homeRecordingCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        app:cardBackgroundColor="@color/naturutas_surface"
+        app:cardCornerRadius="30dp"
+        app:cardElevation="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+            android:id="@+id/buttonContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:animateLayoutChanges="true"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:padding="4dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnStartRoute"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_margin="4dp"
+                android:layout_weight="1"
+                android:minWidth="0dp"
+                android:text="Iniciar ruta"
+                android:textAllCaps="false"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/naturutas_primary"
+                app:cornerRadius="28dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnStopRoute"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_margin="4dp"
+                android:layout_weight="1"
+                android:minWidth="0dp"
+                android:text="Detener"
+                android:textAllCaps="false"
+                android:textSize="13sp"
+                android:visibility="gone"
+                app:backgroundTint="@color/naturutas_error"
+                app:cornerRadius="24dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSaveRoute"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_margin="4dp"
+                android:layout_weight="1"
+                android:minWidth="0dp"
+                android:text="Guardar ruta"
+                android:textAllCaps="false"
+                android:textSize="13sp"
+                android:visibility="gone"
+                app:backgroundTint="@color/naturutas_primary"
+                app:cornerRadius="24dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPauseRoute"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_margin="4dp"
+                android:layout_weight="1"
+                android:minWidth="0dp"
+                android:text="Pausar"
+                android:textAllCaps="false"
+                android:textColor="@color/naturutas_primary"
+                android:textSize="13sp"
+                android:visibility="gone"
+                app:cornerRadius="24dp"
+                app:strokeColor="@color/naturutas_primary" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnResumeRoute"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_margin="4dp"
+                android:layout_weight="1"
+                android:minWidth="0dp"
+                android:text="Reanudar"
+                android:textAllCaps="false"
+                android:textSize="13sp"
+                android:visibility="gone"
+                app:backgroundTint="@color/naturutas_primary"
+                app:cornerRadius="24dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_add_poi"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_margin="4dp"
+                android:layout_weight="1"
+                android:maxLines="2"
+                android:minWidth="0dp"
+                android:text="Punto de interés"
+                android:textAllCaps="false"
+                android:textColor="@color/naturutas_primary"
+                android:textSize="12sp"
+                android:visibility="gone"
+                app:backgroundTint="@color/naturutas_secondary_container"
+                app:cornerRadius="24dp" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
