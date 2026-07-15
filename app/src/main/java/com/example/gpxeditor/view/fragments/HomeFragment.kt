@@ -233,19 +233,16 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         dbHelper = DatabaseHelper(requireContext())
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
 
-        // Solo centrar en Madrid si no hay grabación ni puntos grabados
-        val mapController = mapView.controller
+        // Usar la vista general de España si no hay grabación ni puntos grabados.
         val recordingPointsJson = requireContext().getSharedPreferences("ruta_data", Context.MODE_PRIVATE).getString(RECORDING_POINTS_KEY, null)
         val isRecordingSaved = requireContext().getSharedPreferences("ruta_data", Context.MODE_PRIVATE).getBoolean("isRecordingHome", false)
-        var shouldCenterMadrid = true
+        var shouldUseSpainOverview = true
         if (isRecordingSaved && recordingPointsJson != null) {
-            // Hay grabación activa y puntos grabados, no centrar en Madrid
-            shouldCenterMadrid = false
+            // Hay grabación activa y puntos grabados: conservar su encuadre.
+            shouldUseSpainOverview = false
         }
-        if (shouldCenterMadrid) {
-            val startPoint = GeoPoint(40.4168, -3.7038)
-            mapController.setZoom(12.0)
-            mapController.setCenter(startPoint)
+        if (shouldUseSpainOverview) {
+            showSpainOverview()
         }
 
         btnStartRoute = view.findViewById(R.id.btnStartRoute)
@@ -1309,11 +1306,16 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 recordingPolyline?.let { mapView.overlays.remove(it) }
                 recordingPolyline = null
                 currentDistance = 0.0
-                mapView.controller.setZoom(12.0)
-                mapView.controller.setCenter(GeoPoint(40.4168, -3.7038))
+                showSpainOverview()
             }
             mapView.invalidate()
         }
+    }
+
+    /** Muestra la península, Baleares y Canarias cuando no hay una ruta que encuadrar. */
+    private fun showSpainOverview() {
+        mapView.controller.setZoom(5.0)
+        mapView.controller.setCenter(GeoPoint(36.5, -6.5))
     }
 
     private fun requestNotificationPermission() {
