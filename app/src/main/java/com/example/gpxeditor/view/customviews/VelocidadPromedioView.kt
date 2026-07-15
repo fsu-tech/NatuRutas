@@ -21,9 +21,7 @@ class VelocidadPromedioView(context: Context, private val velocidadPromedio1: Do
     private val barColor2 = if (isDarkMode) ContextCompat.getColor(context,
         R.color.bar_color_dark_green
     ) else ContextCompat.getColor(context, R.color.bar_color_light_green)
-    private val textColor = if (isDarkMode) ContextCompat.getColor(context, R.color.chart_text_dark) else ContextCompat.getColor(context,
-        R.color.chart_text_light
-    )
+    private val textColor = ContextCompat.getColor(context, R.color.naturutas_on_surface)
 
     private var viewWidth: Float = 0f
     private var viewHeight: Float = 0f
