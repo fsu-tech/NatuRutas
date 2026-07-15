@@ -1,12 +1,14 @@
 package com.example.gpxeditor.view.fragments
 
 import android.app.Activity.RESULT_OK
+import android.content.ClipData
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Toast
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -16,6 +18,7 @@ import com.example.gpxeditor.model.database.DatabaseHelper
 import com.example.gpxeditor.model.entities.Route
 import java.io.OutputStreamWriter
 import java.io.IOException
+import java.io.File
 
 class SavedRoutesFragment : Fragment(R.layout.fragment_saved_routes),
     RoutesAdapter.OnItemClickListener {
@@ -79,6 +82,38 @@ class SavedRoutesFragment : Fragment(R.layout.fragment_saved_routes),
         startActivityForResult(intent, CREATE_FILE_REQUEST_CODE)
     }
 
+    fun shareRoutesAsGpx(routes: List<Route>) {
+        if (routes.isEmpty()) return
+
+        try {
+            dbHelper.registrarEvento("MisRutas", "compartir_gpx", "${routes.size} rutas")
+            val shareDirectory = File(requireContext().cacheDir, "shared_routes").apply { mkdirs() }
+            val routeName = routes.singleOrNull()?.name
+                ?.replace(Regex("[^A-Za-z0-9._-]"), "_")
+                ?.take(60)
+                ?.ifBlank { "ruta" }
+                ?: "rutas"
+            val gpxFile = File(shareDirectory, "$routeName.gpx")
+            gpxFile.writeText(buildGpxContent(routes), Charsets.UTF_8)
+
+            val contentUri = FileProvider.getUriForFile(
+                requireContext(),
+                "${requireContext().packageName}.fileprovider",
+                gpxFile
+            )
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/gpx+xml"
+                putExtra(Intent.EXTRA_STREAM, contentUri)
+                clipData = ClipData.newRawUri("Ruta GPX", contentUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(shareIntent, "Compartir ruta"))
+        } catch (e: IOException) {
+            Log.e("SavedRoutesFragment", "Error sharing GPX file", e)
+            Toast.makeText(requireContext(), "No se pudo preparar la ruta para compartir", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == CREATE_FILE_REQUEST_CODE && resultCode == RESULT_OK) {
@@ -95,31 +130,7 @@ class SavedRoutesFragment : Fragment(R.layout.fragment_saved_routes),
         try {
             requireContext().contentResolver.openOutputStream(uri)?.use { outputStream ->
                 OutputStreamWriter(outputStream).use { writer ->
-                    writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-                    writer.write("<gpx version=\"1.1\" creator=\"TuAppAndroid\">\n")
-
-                    for (route in routes) {
-                        writer.write(" <trk>\n  <trkseg>\n")
-
-                        val coordenadas = dbHelper.getRouteCoordinates(route.id)
-                        for (coordenada in coordenadas) {
-                            writer.write("   <trkpt lat=\"${coordenada.latitud}\" lon=\"${coordenada.longitud}\" ele=\"${coordenada.altura}\">\n")
-                            writer.write("   </trkpt>\n")
-                        }
-
-                        writer.write("  </trkseg>\n </trk>\n")
-
-                        val puntosInteres = dbHelper.getPuntosInteresByRouteId(route.id)
-                        for (punto in puntosInteres) {
-                            writer.write("  <wpt lat=\"${punto.latitud}\" lon=\"${punto.longitud}\">\n")
-                            writer.write("   <name>${punto.comentario}</name>\n")
-                            writer.write("   <desc>${punto.comentario}</desc>\n")
-                            punto.imagenUrl?.let { writer.write("   <link href=\"$it\"/>\n") }
-                            writer.write("  </wpt>\n")
-                        }
-                    }
-
-                    writer.write("</gpx>\n")
+                    writer.write(buildGpxContent(routes))
                 }
                 Toast.makeText(requireContext(), "Archivo GPX exportado con éxito", Toast.LENGTH_SHORT).show()
                 Log.d("SavedRoutesFragment", "GPX file created successfully")
@@ -129,5 +140,40 @@ class SavedRoutesFragment : Fragment(R.layout.fragment_saved_routes),
             Toast.makeText(requireContext(), "Ocurrió un error al exportar", Toast.LENGTH_SHORT).show()
         }
     }
-}
 
+    private fun buildGpxContent(routes: List<Route>): String = buildString {
+        appendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+        appendLine("<gpx version=\"1.1\" creator=\"NatuRutas\" xmlns=\"http://www.topografix.com/GPX/1/1\">")
+
+        routes.forEach { route ->
+            dbHelper.getPuntosInteresByRouteId(route.id).forEach { point ->
+                appendLine(" <wpt lat=\"${point.latitud}\" lon=\"${point.longitud}\">")
+                appendLine("  <name>${escapeXml(point.comentario)}</name>")
+                appendLine("  <desc>${escapeXml(point.comentario)}</desc>")
+                point.imagenUrl?.let { appendLine("  <link href=\"${escapeXml(it)}\"/>") }
+                appendLine(" </wpt>")
+            }
+        }
+
+        routes.forEach { route ->
+            appendLine(" <trk>")
+            appendLine("  <name>${escapeXml(route.name)}</name>")
+            appendLine("  <trkseg>")
+            dbHelper.getRouteCoordinates(route.id).forEach { coordinate ->
+                appendLine("   <trkpt lat=\"${coordinate.latitud}\" lon=\"${coordinate.longitud}\">")
+                appendLine("    <ele>${coordinate.altura}</ele>")
+                appendLine("   </trkpt>")
+            }
+            appendLine("  </trkseg>")
+            appendLine(" </trk>")
+        }
+        appendLine("</gpx>")
+    }
+
+    private fun escapeXml(value: String): String = value
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\"", "&quot;")
+        .replace("'", "&apos;")
+}

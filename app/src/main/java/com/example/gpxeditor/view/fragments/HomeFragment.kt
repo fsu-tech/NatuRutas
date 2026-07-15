@@ -103,7 +103,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private var currentRouteName: String? = null
     private var currentDistance: Double = 0.0
     private lateinit var dbHelper: DatabaseHelper
-    private var userMovedMap = false
     private var tiempoEntrada: Long = 0
 
     // Flag para evitar animación en el primer callback tras volver a la pestaña
@@ -230,18 +229,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             recordingPolyline?.setPoints(currentPoints)
             mapView.invalidate()
         }
-
-        // Listener para detectar si el usuario mueve o hace zoom en el mapa (DESPUÉS de inicializar mapView)
-        mapView.setMapListener(object : org.osmdroid.events.MapListener {
-            override fun onScroll(event: org.osmdroid.events.ScrollEvent?): Boolean {
-                userMovedMap = true
-                return false
-            }
-            override fun onZoom(event: org.osmdroid.events.ZoomEvent?): Boolean {
-                userMovedMap = true
-                return false
-            }
-        })
 
         dbHelper = DatabaseHelper(requireContext())
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
@@ -773,8 +760,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             locationMarker?.position = geoPoint
             mapView.invalidate()
 
-            // Si está grabando y no está en pausa, centrar el mapa en la ubicación del usuario y ajustar zoom si el usuario no ha tocado el mapa
-            if (isRecording && !isPaused && !userMovedMap) {
+            // Mantener el punto azul visible durante toda la grabación activa.
+            if (isRecording && !isPaused) {
                 mapView.controller.setCenter(geoPoint)
                 mapView.controller.setZoom(17.0)
             }
@@ -972,6 +959,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 mostrarDialogo(mensajeInsignia + mensajeEcologico)
             }
 
+            clearRecordingDraftAfterSave()
+
         } else {
             Toast.makeText(requireContext(), "Error al guardar la ruta", Toast.LENGTH_SHORT).show()
             Log.e("guardarRuta", "Error al guardar la ruta")
@@ -1055,7 +1044,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         Toast.makeText(requireContext(), "Grabación iniciada", Toast.LENGTH_SHORT).show()
         updateUI(true)
         startLocationUpdates()
-        userMovedMap = false // Al iniciar grabación, el mapa sigue al usuario
     }
 
     private fun stopRecording() {
@@ -1208,6 +1196,34 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         editor.putLong("pauseStartTimeHome", pauseStartTime)
         editor.putLong("totalPauseTimeHome", totalPauseTime)
         editor.apply()
+    }
+
+    /** Limpia únicamente la grabación temporal después de guardarla definitivamente. */
+    private fun clearRecordingDraftAfterSave() {
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+        isLocationUpdatesActive = false
+        isRecording = false
+        isPaused = false
+        startTime = 0L
+        endTime = 0L
+        pauseStartTime = 0L
+        totalPauseTime = 0L
+        currentPoints = mutableListOf()
+        currentWaypoints = mutableListOf()
+        currentElevations = mutableListOf()
+        currentRouteName = null
+        currentDistance = 0.0
+
+        recordingPolyline?.let { mapView.overlays.remove(it) }
+        recordingPolyline = null
+        mapView.overlays.removeAll { overlay ->
+            overlay is Marker && overlay.title == "Punto de Interés"
+        }
+        mapView.invalidate()
+
+        saveRecordingPoints()
+        saveRouteData()
+        updateUI(false)
     }
 
     private fun loadRouteData() {
