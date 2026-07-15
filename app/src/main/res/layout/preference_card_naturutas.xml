@@ -3,10 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginStart="2dp"
     android:layout_marginTop="4dp"
-    android:layout_marginEnd="2dp"
-    android:layout_marginBottom="8dp"
+    android:layout_marginBottom="4dp"
     android:focusable="true"
     app:cardBackgroundColor="@color/naturutas_surface"
     app:cardCornerRadius="18dp"
@@ -18,52 +16,57 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:duplicateParentState="true"
         android:gravity="center_vertical"
-        android:minHeight="76dp"
+        android:minHeight="72dp"
         android:orientation="horizontal"
         android:paddingStart="16dp"
-        android:paddingTop="12dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="12dp">
+        android:paddingTop="10dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="10dp">
 
-        <TextView
-            android:layout_width="42dp"
-            android:layout_height="42dp"
-            android:background="@drawable/bg_route_badge"
-            android:gravity="center"
-            android:text="R"
-            android:textColor="@color/naturutas_on_secondary_container"
-            android:textSize="17sp"
-            android:textStyle="bold" />
+        <FrameLayout
+            android:id="@android:id/icon_frame"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@android:id/icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp" />
+        </FrameLayout>
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/routeName"
+                android:id="@android:id/title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="2"
-                android:text="Nombre de la ruta"
                 android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                android:textColor="@color/naturutas_on_surface"
-                android:textStyle="bold" />
+                android:textColor="@color/naturutas_on_surface" />
 
             <TextView
-                android:id="@+id/routeDate"
+                android:id="@android:id/summary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Fecha de la ruta"
+                android:layout_marginTop="2dp"
+                android:maxLines="2"
                 android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
                 android:textColor="@color/naturutas_secondary_text" />
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@android:id/widget_frame"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="vertical" />
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>

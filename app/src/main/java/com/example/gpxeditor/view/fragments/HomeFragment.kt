@@ -1242,7 +1242,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         // Restaurar puntos y elevaciones de grabación
         restoreRecordingPoints()
 
-        val hasRecordingPoints = !currentPoints.isNullOrEmpty()
+        val recordingIsActive = sharedPreferences.getBoolean("isRecordingHome", false)
+        val recordingPointCount = currentPoints?.size ?: 0
+        // Un punto aislado de una grabación ya detenida no constituye una ruta pendiente.
+        val hasRecordingPoints = recordingPointCount > 1 ||
+            (recordingIsActive && recordingPointCount > 0)
 
         if (routePointsJson != null && waypointsJson != null && elevationsJson != null && routeNameJson != null) {
             val pointsType = object : TypeToken<List<GeoPoint>>() {}.type

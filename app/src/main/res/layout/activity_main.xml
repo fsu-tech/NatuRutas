@@ -13,15 +13,22 @@
 
 
     <!-- Botón Panel profesional solo visible en ajustes -->
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnPanelProfesionalAjustes"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Panel profesional"
+        android:layout_height="52dp"
         android:layout_above="@id/bottom_navigation"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="12dp"
+        android:minWidth="0dp"
+        android:text="Panel profesional"
+        android:textAllCaps="false"
+        android:textColor="@color/naturutas_on_primary"
+        android:textStyle="bold"
         android:visibility="gone"
-        android:textColor="@color/black"
-        android:backgroundTint="@color/teal_200" />
+        app:backgroundTint="@color/naturutas_primary"
+        app:cornerRadius="24dp" />
 
     <!-- Barra de navegación inferior -->
     <com.google.android.material.bottomnavigation.BottomNavigationView

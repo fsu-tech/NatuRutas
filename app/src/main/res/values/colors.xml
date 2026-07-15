@@ -6,9 +6,11 @@
     <color name="naturutas_primary">#176B45</color>
     <color name="naturutas_on_primary">#FFFFFFFF</color>
     <color name="naturutas_surface">#FFFBFE</color>
+    <color name="naturutas_background">#F2F6F3</color>
     <color name="naturutas_on_surface">#1B1C1B</color>
     <color name="naturutas_secondary_text">#5F6361</color>
     <color name="naturutas_secondary_container">#DDEFE4</color>
+    <color name="naturutas_on_secondary_container">#143927</color>
     <color name="naturutas_outline">#D8E2DC</color>
     <color name="naturutas_error">#B3261E</color>
     <color name="bar_color_light_1">#00FF00</color>

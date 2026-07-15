@@ -5,6 +5,7 @@
         <item name="colorOnPrimary">@color/naturutas_on_primary</item>
         <item name="colorSurface">@color/naturutas_surface</item>
         <item name="colorOnSurface">@color/naturutas_on_surface</item>
+        <item name="android:colorBackground">@color/naturutas_background</item>
         <item name="colorOutline">@color/naturutas_outline</item>
         <item name="android:statusBarColor">@color/naturutas_surface</item>
         <item name="android:navigationBarColor">@color/naturutas_surface</item>
