@@ -8,8 +8,6 @@ import android.util.Log
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
 import com.example.gpxeditor.view.fragments.CompareFragment
@@ -19,7 +17,6 @@ import com.example.gpxeditor.R
 import com.example.gpxeditor.view.fragments.SavedRoutesFragment
 import com.example.gpxeditor.model.database.DatabaseHelper
 import com.example.gpxeditor.view.fragments.SettingsFragment
-import com.example.gpxeditor.model.services.MiServicio
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class MainActivity : AppCompatActivity(), HomeFragment.NavigationListener, SharedPreferences.OnSharedPreferenceChangeListener {
@@ -111,16 +108,6 @@ class MainActivity : AppCompatActivity(), HomeFragment.NavigationListener, Share
             transaction.replace(R.id.fragment_container, fragment)
         }
         transaction.commit()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        startService(Intent(this, MiServicio::class.java))
-    }
-
-    override fun onPause() {
-        super.onPause()
-        stopService(Intent(this, MiServicio::class.java))
     }
 
     override fun onBackPressed() {
