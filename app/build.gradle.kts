@@ -3,7 +3,6 @@ plugins {
     alias(libs.plugins.kotlin.android)
     id("kotlin-kapt")
     id("kotlin-parcelize") // Añadido el plugin Parcelize
-    id("com.google.gms.google-services")
 }
 
 android {
@@ -59,8 +58,6 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     implementation("org.jetbrains.kotlin:kotlin-parcelize-runtime:1.8.20")
     implementation ("com.google.code.gson:gson:2.8.9")
-    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
-    implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("androidx.preference:preference-ktx:1.2.0")
     implementation ("com.github.bumptech.glide:glide:4.12.0")
 

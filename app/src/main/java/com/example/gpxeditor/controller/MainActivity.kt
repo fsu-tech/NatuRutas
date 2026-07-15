@@ -25,8 +25,6 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 class MainActivity : AppCompatActivity(), HomeFragment.NavigationListener, SharedPreferences.OnSharedPreferenceChangeListener {
         private val LOCATION_PERMISSION_CODE = 102
         private var pendingFragment: Fragment? = null
-    private lateinit var btnPanelProfesionalAjustes: android.widget.Button
-
     private val READ_STORAGE_PERMISSION_CODE = 101
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var dbHelper: DatabaseHelper
@@ -37,11 +35,6 @@ class MainActivity : AppCompatActivity(), HomeFragment.NavigationListener, Share
 
         if (savedInstanceState == null) {
             discardStoppedRecordingDraft()
-        }
-
-        btnPanelProfesionalAjustes = findViewById(R.id.btnPanelProfesionalAjustes)
-        btnPanelProfesionalAjustes.setOnClickListener {
-            startActivity(Intent(this, com.example.gpxeditor.controller.BusinessInsightsActivity::class.java))
         }
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
@@ -57,12 +50,6 @@ class MainActivity : AppCompatActivity(), HomeFragment.NavigationListener, Share
                 R.id.nav_settings -> SettingsFragment()
                 R.id.nav_saved_routes -> SavedRoutesFragment()
                 else -> null
-            }
-            // Mostrar u ocultar el botón Panel profesional según el fragmento
-            if (item.itemId == R.id.nav_settings) {
-                btnPanelProfesionalAjustes.visibility = android.view.View.VISIBLE
-            } else {
-                btnPanelProfesionalAjustes.visibility = android.view.View.GONE
             }
             if (fragment != null) {
                 val pantalla = when (item.itemId) {
