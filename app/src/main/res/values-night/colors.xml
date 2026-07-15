@@ -3,6 +3,14 @@
     <color name="black">#FFFFFFFF</color>
     <color name="white">#FF000000</color>
     <color name="teal_200">#03DAC5</color>
+    <color name="naturutas_primary">#85D5A9</color>
+    <color name="naturutas_on_primary">#003921</color>
+    <color name="naturutas_surface">#1B1C1B</color>
+    <color name="naturutas_on_surface">#E3E3E0</color>
+    <color name="naturutas_secondary_text">#BFC9C2</color>
+    <color name="naturutas_secondary_container">#294A38</color>
+    <color name="naturutas_outline">#465249</color>
+    <color name="naturutas_error">#FFB4AB</color>
     <color name="bar_color_light_1">#32CD32</color>
     <color name="bar_color_light_2">#FFD700</color>
     <color name="bar_color_dark_1">#00FF00</color>

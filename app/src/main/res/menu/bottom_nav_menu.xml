@@ -22,8 +22,7 @@
     <item
         android:id="@+id/nav_saved_routes"
         android:icon="@drawable/ic_saved_routes"
-        android:title="Rutas Guardadas" />
+        android:title="Rutas" />
 
 
 </menu>
-
