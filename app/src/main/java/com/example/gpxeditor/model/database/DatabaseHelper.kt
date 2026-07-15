@@ -185,7 +185,6 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
     fun registrarEvento(pantalla: String, evento: String, detalle: String? = null, rutaId: Long? = null) {
         val prefs = context.getSharedPreferences(PREFS_TELEMETRIA, android.content.Context.MODE_PRIVATE)
         val usuario = prefs.getString(KEY_USUARIO, "desconocido")
-        val usuarioId = prefs.getString(KEY_USUARIO_ID, "desconocido")
         val sesionId = prefs.getString(KEY_SESION, "sin_sesion")
         val db = writableDatabase
         val values = ContentValues().apply {
@@ -198,23 +197,6 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         }
         val rowId = db.insert(TABLE_EVENTOS, null, values)
         android.util.Log.d("TELEMETRIA", "Evento guardado [id=$rowId] usuario=$usuario | pantalla=$pantalla | evento=$evento | detalle=$detalle")
-
-        // Enviar también a Firestore
-        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-        val eventoFirestore = hashMapOf(
-            "timestamp" to System.currentTimeMillis(),
-            "usuario" to usuario,
-            "usuarioId" to usuarioId,
-            "sesion_id" to sesionId,
-            "pantalla" to pantalla,
-            "evento" to evento,
-            "detalle" to detalle
-        )
-        // Guardar rutaId explícito si se pasa
-        if (rutaId != null) {
-            eventoFirestore["rutaId"] = rutaId
-        }
-        firestore.collection("eventos").add(eventoFirestore)
     }
 
     data class PuntoInteresData(
@@ -237,13 +219,6 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
     ): Long {
         val db = writableDatabase
         var rutaId = -1L
-
-        // Obtener usuario y usuarioId de preferencias
-        val prefs = context.getSharedPreferences(PREFS_TELEMETRIA, android.content.Context.MODE_PRIVATE)
-        var usuario = prefs.getString(KEY_USUARIO, "desconocido")
-        if (usuario == null || usuario.isBlank()) usuario = "desconocido"
-        var usuarioId = prefs.getString(KEY_USUARIO_ID, null)
-        if (usuarioId == null || usuarioId.isBlank()) usuarioId = "desconocido"
 
         db.beginTransaction()
         Log.d("DatabaseHelper", "insertRoute: Transaccion iniciada")
@@ -312,66 +287,6 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         }
         Log.d("DatabaseHelper", "insertRoute: RutaId final: $rutaId")
 
-        // --- SUBIDA AUTOMÁTICA A FIRESTORE ---
-        if (rutaId != -1L) {
-            val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-            // Mostrar usuarioId en un Toast para depuración visual
-            android.os.Handler(android.os.Looper.getMainLooper()).post {
-                android.widget.Toast.makeText(context, "usuarioId: $usuarioId", android.widget.Toast.LENGTH_LONG).show()
-            }
-            // Subir ruta
-            val rutaMap = hashMapOf(
-                "rutaId" to rutaId,
-                "nombre" to nombre,
-                "fecha" to fecha,
-                "tipoRuta" to tipoRuta,
-                "usuarioId" to usuarioId
-            )
-            firestore.collection("rutas").document(rutaId.toString()).set(rutaMap)
-                .addOnSuccessListener {
-                    Log.d("Firestore", "Ruta subida: $rutaId")
-                    android.os.Handler(android.os.Looper.getMainLooper()).post {
-                        android.widget.Toast.makeText(context, "Ruta subida a Firestore", android.widget.Toast.LENGTH_SHORT).show()
-                    }
-                }
-                .addOnFailureListener { e ->
-                    Log.e("Firestore", "Error subiendo ruta: $rutaId - ${e.message}", e)
-                    android.os.Handler(android.os.Looper.getMainLooper()).post {
-                        android.widget.Toast.makeText(context, "Error subiendo ruta a Firestore: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
-                    }
-                }
-
-            // Subir estadísticas
-            val estadisticas = getEstadisticasByRouteId(rutaId)
-            if (estadisticas != null) {
-                val estadisticasMap = hashMapOf(
-                    "rutaId" to rutaId,
-                    "distancia" to estadisticas.distancia,
-                    "tiempoTotal" to estadisticas.tiempoTotal,
-                    "velocidadPromedio" to estadisticas.velocidad_promedio,
-                    "desnivelAcumulado" to estadisticas.desnivelAcumulado
-                )
-                firestore.collection("estadisticas").document(rutaId.toString()).set(estadisticasMap)
-                    .addOnSuccessListener { Log.d("Firestore", "Estadísticas subidas: $rutaId") }
-                    .addOnFailureListener { e -> Log.e("Firestore", "Error subiendo estadísticas: $rutaId - ${e.message}", e) }
-            }
-
-            // Subir puntos de interés
-            puntosInteres.forEachIndexed { idx, punto ->
-                val poiMap = hashMapOf(
-                    "rutaId" to rutaId,
-                    "latitud" to punto.latitud,
-                    "longitud" to punto.longitud,
-                    "comentario" to punto.comentario,
-                    "imagenUrl" to punto.imagenPath,
-                    "userImagenUrl" to punto.userImagenPath,
-                    "orden" to idx
-                )
-                firestore.collection("puntos_interes").add(poiMap)
-                    .addOnSuccessListener { Log.d("Firestore", "POI subido: ruta $rutaId idx $idx") }
-                    .addOnFailureListener { e -> Log.e("Firestore", "Error subiendo POI: ruta $rutaId idx $idx - ${e.message}", e) }
-            }
-        }
         return rutaId
     }
 

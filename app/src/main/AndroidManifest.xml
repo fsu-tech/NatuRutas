@@ -62,14 +62,6 @@
             android:name=".controller.RouteDetailActivity"
             android:exported="true" />
 
-        <activity
-            android:name=".controller.RecommendationsActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".controller.BusinessInsightsActivity"
-            android:exported="false" />
-
         <service
             android:name=".model.services.MiServicio"
             android:foregroundServiceType="location" />
