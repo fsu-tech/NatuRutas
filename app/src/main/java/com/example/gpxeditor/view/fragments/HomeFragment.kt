@@ -3,8 +3,10 @@ package com.example.gpxeditor.view.fragments
 
 import android.Manifest
 import android.app.Activity
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -50,6 +52,7 @@ import org.xmlpull.v1.XmlPullParserException
 import java.io.IOException
 import java.io.InputStream
 import com.example.gpxeditor.model.database.DatabaseHelper
+import com.example.gpxeditor.model.services.MiServicio
 import org.osmdroid.views.overlay.Overlay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -115,30 +118,27 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     val geoPoint = GeoPoint(location.latitude, location.longitude)
                     updateUserLocation(geoPoint, skipAnimation = skipNextLocationAnimation)
                     lastLocation = location
-
-                    // Si está grabando y no está en pausa, añadir punto y actualizar polyline de grabación
-                    if (isRecording && !isPaused) {
-                        if (currentPoints == null) currentPoints = mutableListOf()
-                        if (currentElevations == null) currentElevations = mutableListOf()
-                        currentPoints?.add(geoPoint)
-                        currentElevations?.add(location.altitude)
-                        if (recordingPolyline == null) {
-                            recordingPolyline = Polyline().apply {
-                                outlinePaint.color = Color.parseColor("#FF9800") // Naranja para la grabación
-                                outlinePaint.strokeWidth = 8f
-                            }
-                            mapView.overlays.add(recordingPolyline)
-                        }
-                        recordingPolyline?.setPoints(currentPoints)
-                        mapView.invalidate()
-                        saveRecordingPoints() // Guardar puntos y elevaciones en cada nueva ubicación
-                    }
                     // Si el flag está activo, lo desactivamos tras el primer callback
                     if (skipNextLocationAnimation) {
                         skipNextLocationAnimation = false
                     }
                 }
             }
+        }
+    }
+
+    private var recordingReceiverRegistered = false
+    private val recordingUpdatesReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (!isAdded || view == null) return
+            syncRecordingFromService(
+                latitude = intent?.takeIf {
+                    it.hasExtra(MiServicio.EXTRA_LATITUDE)
+                }?.getDoubleExtra(MiServicio.EXTRA_LATITUDE, 0.0),
+                longitude = intent?.takeIf {
+                    it.hasExtra(MiServicio.EXTRA_LONGITUDE)
+                }?.getDoubleExtra(MiServicio.EXTRA_LONGITUDE, 0.0)
+            )
         }
     }
 
@@ -152,6 +152,54 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val recordingWaypoints = if (currentPoints.isNullOrEmpty()) emptyList() else currentWaypoints.orEmpty()
         editor.putString(RECORDING_WAYPOINTS_KEY, gson.toJson(recordingWaypoints))
         editor.apply()
+    }
+
+    /** Actualiza únicamente los puntos de interés sin sobrescribir puntos GPS del servicio. */
+    private fun saveRecordingWaypoints() {
+        sharedPreferences.edit()
+            .putString(
+                RECORDING_WAYPOINTS_KEY,
+                gson.toJson(
+                    if (currentPoints.isNullOrEmpty()) {
+                        emptyList<WaypointInfo>()
+                    } else {
+                        currentWaypoints.orEmpty()
+                    }
+                )
+            )
+            .apply()
+    }
+
+    private fun syncRecordingFromService(latitude: Double? = null, longitude: Double? = null) {
+        restoreRecordingPoints()
+        recalculateDistanceFromPoints()
+        loadRouteData()
+
+        val hasRecordingPoints = !currentPoints.isNullOrEmpty()
+        if (hasRecordingPoints) {
+            if (recordingPolyline == null) {
+                recordingPolyline = Polyline().apply {
+                    outlinePaint.color = Color.parseColor("#FF9800")
+                    outlinePaint.strokeWidth = 8f
+                }
+                mapView.overlays.add(recordingPolyline)
+            }
+            recordingPolyline?.setPoints(currentPoints)
+        }
+
+        if (latitude != null && longitude != null) {
+            updateUserLocation(GeoPoint(latitude, longitude))
+        } else if (isRecording && !currentPoints.isNullOrEmpty()) {
+            updateUserLocation(currentPoints!!.last())
+        }
+        mapView.invalidate()
+    }
+
+    private fun sendRecordingCommand(action: String) {
+        ContextCompat.startForegroundService(
+            requireContext(),
+            Intent(requireContext(), MiServicio::class.java).setAction(action)
+        )
     }
 
     /** Restaura todos los datos temporales de la grabación desde SharedPreferences. */
@@ -986,7 +1034,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val segundos = (System.currentTimeMillis() - tiempoEntrada) / 1000
         dbHelper.registrarEvento("Inicio", "tiempo_en_pantalla", "${segundos}s")
         saveRouteData()
-        saveRecordingPoints() // Guardar puntos y elevaciones al pausar
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+        isLocationUpdatesActive = false
         if (requireActivity().isFinishing) {
             isAppClosing = true
             limpiarRecursos()
@@ -998,6 +1047,27 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         scope.cancel()
     }
 
+    override fun onStart() {
+        super.onStart()
+        if (!recordingReceiverRegistered) {
+            ContextCompat.registerReceiver(
+                requireContext(),
+                recordingUpdatesReceiver,
+                IntentFilter(MiServicio.ACTION_RECORDING_UPDATED),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            recordingReceiverRegistered = true
+        }
+    }
+
+    override fun onStop() {
+        if (recordingReceiverRegistered) {
+            requireContext().unregisterReceiver(recordingUpdatesReceiver)
+            recordingReceiverRegistered = false
+        }
+        super.onStop()
+    }
+
     override fun onResume() {
         super.onResume()
         tiempoEntrada = System.currentTimeMillis()
@@ -1006,19 +1076,30 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         restoreRouteFromPrefs()
         requestNotificationPermission()
         loadRouteData()
-        if (isRecording && !isPaused) {
-            // Centrar inmediatamente en la última ubicación conocida si existe
-            lastLocation?.let { location ->
-                val geoPoint = GeoPoint(location.latitude, location.longitude)
-                mapView.controller.setCenter(geoPoint)
-                mapView.controller.setZoom(17.0)
+        if (isRecording) {
+            if (!isPaused) {
+                // Centrar inmediatamente en la última ubicación conocida si existe
+                lastLocation?.let { location ->
+                    val geoPoint = GeoPoint(location.latitude, location.longitude)
+                    mapView.controller.setCenter(geoPoint)
+                    mapView.controller.setZoom(17.0)
+                }
+                skipNextLocationAnimation = true
             }
-            skipNextLocationAnimation = true
-            startLocationUpdates()
+            sendRecordingCommand(MiServicio.ACTION_ENSURE_RECORDING)
         }
     }
 
     private fun startRecording() {
+        if (ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestLocationPermissions()
+            return
+        }
+
         // Solo limpiar la polyline y datos de la grabación anterior, NO los overlays de la ruta cargada
         recordingPolyline?.let { mapView.overlays.remove(it) }
         recordingPolyline = null
@@ -1040,7 +1121,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         mapView.invalidate()
         Toast.makeText(requireContext(), "Grabación iniciada", Toast.LENGTH_SHORT).show()
         updateUI(true)
-        startLocationUpdates()
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+        isLocationUpdatesActive = false
+        sendRecordingCommand(MiServicio.ACTION_START_RECORDING)
     }
 
     private fun stopRecording() {
@@ -1064,6 +1147,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         fusedLocationClient.removeLocationUpdates(locationCallback)
         // Deja el Polyline en el mapa tras detener
         saveRouteData()
+        sendRecordingCommand(MiServicio.ACTION_STOP_RECORDING)
     }
 
     private fun pauseRoute() {
@@ -1071,6 +1155,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             isPaused = true
             pauseStartTime = System.currentTimeMillis()
             fusedLocationClient.removeLocationUpdates(locationCallback)
+            saveRouteData()
+            sendRecordingCommand(MiServicio.ACTION_PAUSE_RECORDING)
             updateUI(true)
             Toast.makeText(requireContext(), "Grabación pausada", Toast.LENGTH_SHORT).show()
         }
@@ -1080,7 +1166,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         if (isRecording && isPaused) {
             isPaused = false
             totalPauseTime += System.currentTimeMillis() - pauseStartTime
-            startLocationUpdates()
+            saveRouteData()
+            sendRecordingCommand(MiServicio.ACTION_RESUME_RECORDING)
             updateUI(true)
             Toast.makeText(requireContext(), "Grabación reanudada", Toast.LENGTH_SHORT).show()
         }
@@ -1122,7 +1209,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     currentWaypoints = currentWaypoints?.toMutableList() ?: mutableListOf()
                 }
                 (currentWaypoints as MutableList<WaypointInfo>).add(waypoint)
-                saveRecordingPoints()
+                saveRecordingWaypoints()
                 Toast.makeText(requireContext(), "Punto de interés agregado", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Cancelar", null)
