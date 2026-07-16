@@ -1,6 +1,7 @@
 package com.example.gpxeditor.controller
 
 import android.content.Intent
+import android.graphics.Paint
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -172,7 +173,17 @@ class RouteDetailActivity : AppCompatActivity() {
     }
 
     private fun drawRouteOnMap(points: List<GeoPoint>) {
-        val polyline = Polyline().apply { setPoints(points) }
+        val polyline = Polyline().apply {
+            setPoints(points)
+            outlinePaint.color = ContextCompat.getColor(
+                this@RouteDetailActivity,
+                R.color.naturutas_primary
+            )
+            outlinePaint.strokeWidth = 8f
+            outlinePaint.strokeCap = Paint.Cap.ROUND
+            outlinePaint.strokeJoin = Paint.Join.ROUND
+            outlinePaint.isAntiAlias = true
+        }
         routeMapView.overlays.add(polyline)
 
         if (points.isNotEmpty()) {
