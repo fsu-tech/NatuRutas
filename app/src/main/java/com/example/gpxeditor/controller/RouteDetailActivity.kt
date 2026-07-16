@@ -175,10 +175,8 @@ class RouteDetailActivity : AppCompatActivity() {
         val polyline = Polyline().apply { setPoints(points) }
         routeMapView.overlays.add(polyline)
 
-        // Añadir marcador de inicio (verde) y fin (rojo) si hay puntos
         if (points.isNotEmpty()) {
-            val startDrawable = ContextCompat.getDrawable(this, R.drawable.ic_map)?.mutate()
-            startDrawable?.setTint(android.graphics.Color.GREEN)
+            val startDrawable = ContextCompat.getDrawable(this, R.drawable.ic_route_start)
             val startMarker = Marker(routeMapView)
             startMarker.position = points.first()
             startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
@@ -186,8 +184,7 @@ class RouteDetailActivity : AppCompatActivity() {
             startMarker.icon = startDrawable
             routeMapView.overlays.add(startMarker)
 
-            val endDrawable = ContextCompat.getDrawable(this, R.drawable.ic_map)?.mutate()
-            endDrawable?.setTint(android.graphics.Color.RED)
+            val endDrawable = ContextCompat.getDrawable(this, R.drawable.ic_route_finish)
             val endMarker = Marker(routeMapView)
             endMarker.position = points.last()
             endMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
@@ -217,8 +214,15 @@ class RouteDetailActivity : AppCompatActivity() {
                 title = "Punto de Interés"
                 snippet = poi.comentario
 
+                val markerIcon = if (
+                    poi.userImagenUrl.isNullOrBlank() && poi.imagenUrl.isNullOrBlank()
+                ) {
+                    R.drawable.ic_poi
+                } else {
+                    R.drawable.ic_poi_photo
+                }
                 val iconDrawable =
-                    ContextCompat.getDrawable(this@RouteDetailActivity, R.drawable.ic_poi)
+                    ContextCompat.getDrawable(this@RouteDetailActivity, markerIcon)
                 icon = iconDrawable ?: run {
                     Log.e(
                         "RouteDetailActivity",

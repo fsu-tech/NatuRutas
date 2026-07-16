@@ -254,9 +254,15 @@ class CreateFragment : Fragment(R.layout.fragment_create) {
     private fun drawPoiMarker(lat: Double, lon: Double, comment: String, photoUrl: String?) {
         val poiMarker = Marker(mapView).apply {
             position = GeoPoint(lat, lon)
+            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
             title = "Punto de Interés"
             snippet = comment
-            icon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_poi)
+            val markerIcon = if (photoUrl.isNullOrBlank()) {
+                R.drawable.ic_poi
+            } else {
+                R.drawable.ic_poi_photo
+            }
+            icon = ContextCompat.getDrawable(requireContext(), markerIcon)
             setOnMarkerClickListener { marker, _ ->
                 showPoiDetailsDialog(marker.snippet, photoUrl)
                 true

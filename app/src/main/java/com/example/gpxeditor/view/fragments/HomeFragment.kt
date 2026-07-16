@@ -698,9 +698,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         mapView.controller.setZoom(15.0)
 
 
-        // Usar drawables independientes para cada marcador
-        val startDrawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_map)?.mutate()
-        startDrawable?.setTint(Color.GREEN)
+        val startDrawable =
+            ContextCompat.getDrawable(requireContext(), R.drawable.ic_route_start)
         val startMarker = Marker(mapView)
         startMarker.position = points.first()
         startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
@@ -709,8 +708,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         gpxOverlays.add(startMarker)
         mapView.overlays.add(startMarker)
 
-        val endDrawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_map)?.mutate()
-        endDrawable?.setTint(Color.RED)
+        val endDrawable =
+            ContextCompat.getDrawable(requireContext(), R.drawable.ic_route_finish)
         val endMarker = Marker(mapView)
         endMarker.position = points.last()
         endMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
@@ -725,7 +724,14 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             waypointMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
             waypointMarker.title = waypointInfo.name
             waypointMarker.snippet = waypointInfo.description
-            waypointMarker.icon.setTint(Color.BLUE)
+            val waypointIcon = if (
+                waypointInfo.userPhotoUrl.isNotBlank() || waypointInfo.photoUrl.isNotBlank()
+            ) {
+                R.drawable.ic_poi_photo
+            } else {
+                R.drawable.ic_poi
+            }
+            waypointMarker.icon = ContextCompat.getDrawable(requireContext(), waypointIcon)
 
             waypointMarker.setOnMarkerClickListener { marker, _ ->
                 dbHelper.registrarEvento("Inicio", "click_waypoint", waypointInfo.name)
@@ -1312,9 +1318,15 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private fun drawPoiMarker(lat: Double, lon: Double, comment: String, photoReference: String?) {
         val poiMarker = Marker(mapView).apply {
             position = GeoPoint(lat, lon)
+            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
             title = "Punto de Interés"
             snippet = comment
-            icon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_poi)
+            val markerIcon = if (photoReference.isNullOrBlank()) {
+                R.drawable.ic_poi
+            } else {
+                R.drawable.ic_poi_photo
+            }
+            icon = ContextCompat.getDrawable(requireContext(), markerIcon)
             setOnMarkerClickListener { marker, _ ->
                 showPoiDetailsDialog(marker.snippet, photoReference)
                 true
