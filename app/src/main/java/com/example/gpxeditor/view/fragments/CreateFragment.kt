@@ -226,16 +226,14 @@ class CreateFragment : Fragment(R.layout.fragment_create) {
     private fun showAddPoiDialog(lat: Double, lon: Double) {
         val view = layoutInflater.inflate(R.layout.dialog_add_poi, null)
         val etComment = view.findViewById<EditText>(R.id.et_comment)
-        val etPhotoUrl = view.findViewById<EditText>(R.id.et_photo_url)
 
         AlertDialog.Builder(requireContext())
             .setView(view)
             .setTitle("Agregar Punto de Interés")
             .setPositiveButton("Guardar") { _, _ ->
                 val comment = etComment.text.toString()
-                val photoUrl = etPhotoUrl.text.toString()
-                viewModel.addPuntoInteres(PuntoInteresTemporal(lat, lon, comment, photoUrl, null))
-                drawPoiMarker(lat, lon, comment, photoUrl)
+                viewModel.addPuntoInteres(PuntoInteresTemporal(lat, lon, comment, null, null))
+                drawPoiMarker(lat, lon, comment, null)
                 // Insignia Cronista de la Naturaleza
                 val waypointsConInfoEcologica = viewModel.puntosInteresTemporales.value?.filter { it.imagenPath?.isNotEmpty() == true }?.size ?: 0
                 val fechaObtencion = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())

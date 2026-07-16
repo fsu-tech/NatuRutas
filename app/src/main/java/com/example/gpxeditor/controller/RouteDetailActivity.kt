@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import com.example.gpxeditor.R
+import com.example.gpxeditor.util.PoiPhotoStorage
 import com.example.gpxeditor.model.database.DatabaseHelper
 import com.example.gpxeditor.model.entities.PuntoInteres
 import com.example.gpxeditor.model.entities.Route
@@ -263,8 +264,6 @@ class RouteDetailActivity : AppCompatActivity() {
         val view = layoutInflater.inflate(R.layout.dialog_poi_details, null)
         val tvComment = view.findViewById<TextView>(R.id.tv_comment)
         val ivPhoto = view.findViewById<ImageView>(R.id.iv_photo)
-        val etPhotoUrl = view.findViewById<EditText>(R.id.et_photo_url)
-        val btnSaveUrl = view.findViewById<Button>(R.id.btn_save_url)
 
         tvComment.text = comment ?: "Sin comentario"
 
@@ -280,41 +279,29 @@ class RouteDetailActivity : AppCompatActivity() {
                 userPhotoUrl
             }
             Glide.with(this)
-                .load(finalUserPhotoUrl)
+                .load(PoiPhotoStorage.glideModel(finalUserPhotoUrl))
                 .placeholder(R.drawable.ic_image_link)
+                .error(R.drawable.ic_no_image)
                 .into(ivPhoto)
             imageUrlToOpen = finalUserPhotoUrl
         } else if (!photoUrl.isNullOrEmpty()) {
             Glide.with(this)
-                .load(photoUrl)
+                .load(PoiPhotoStorage.glideModel(photoUrl))
                 .placeholder(R.drawable.ic_image_link)
+                .error(R.drawable.ic_no_image)
                 .into(ivPhoto)
             imageUrlToOpen = photoUrl
         } else {
             ivPhoto.setImageResource(R.drawable.ic_no_image)
         }
 
-        // Configurar OnClickListener para abrir la imagen en el navegador
         ivPhoto.setOnClickListener {
             if (!imageUrlToOpen.isNullOrEmpty()) {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(imageUrlToOpen)))
-            }
-        }
-
-        // Configurar OnClickListener para guardar la URL de la foto
-        btnSaveUrl.setOnClickListener {
-            val newPhotoUrl = etPhotoUrl.text.toString()
-            if (newPhotoUrl.isNotEmpty()) {
-                dbHelper.updatePoiPhotoUrl(poiId, newPhotoUrl)
-                Toast.makeText(this, "URL de foto guardada", Toast.LENGTH_SHORT).show()
-                // Recargar la imagen con la nueva URL
-                Glide.with(this)
-                    .load(newPhotoUrl)
-                    .placeholder(R.drawable.ic_image_link)
-                    .into(ivPhoto)
-                imageUrlToOpen = newPhotoUrl
-            } else {
-                Toast.makeText(this, "Introduce una URL", Toast.LENGTH_SHORT).show()
+                try {
+                    PoiPhotoStorage.openPhoto(this, imageUrlToOpen!!)
+                } catch (error: Exception) {
+                    Toast.makeText(this, "No se puede abrir la foto", Toast.LENGTH_SHORT).show()
+                }
             }
         }
 

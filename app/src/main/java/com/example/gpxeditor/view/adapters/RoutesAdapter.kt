@@ -68,6 +68,10 @@ class RoutesAdapter(private val routes: List<Route>, private val listener: OnIte
                 (currentListener as? SavedRoutesFragment)?.shareRoutesAsGpx(listOf(currentRoute))
                 true
             }
+            menu?.add(0, 4, 0, "Exportar a Wikiloc")?.setOnMenuItemClickListener {
+                (currentListener as? SavedRoutesFragment)?.exportRouteToWikiloc(currentRoute)
+                true
+            }
         }
 
             }
