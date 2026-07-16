@@ -3,4 +3,7 @@
     <cache-path
         name="shared_routes"
         path="shared_routes/" />
+    <files-path
+        name="poi_photos"
+        path="poi_photos/" />
 </paths>

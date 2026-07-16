@@ -322,6 +322,29 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         return coordinates
     }
 
+    fun getRouteTimeRange(routeId: Long): Pair<Long, Long>? {
+        val db = readableDatabase
+        val cursor = db.query(
+            TABLE_ESTADISTICAS,
+            arrayOf(COLUMN_ESTADISTICAS_START_TIME, COLUMN_ESTADISTICAS_END_TIME),
+            "$COLUMN_ESTADISTICAS_RUTA_ID = ?",
+            arrayOf(routeId.toString()),
+            null,
+            null,
+            null
+        )
+
+        return try {
+            if (cursor.moveToFirst() && !cursor.isNull(0) && !cursor.isNull(1)) {
+                cursor.getLong(0) to cursor.getLong(1)
+            } else {
+                null
+            }
+        } finally {
+            cursor.close()
+        }
+    }
+
     private fun calculateStatistics(
         puntos: List<Triple<Double, Double, Double>>,
         startTime: Long,

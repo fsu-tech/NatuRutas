@@ -31,8 +31,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import com.bumptech.glide.Glide
 import com.example.gpxeditor.R
+import com.example.gpxeditor.util.PoiPhotoStorage
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -59,6 +62,7 @@ import java.util.Date
 import java.util.Locale
 import org.xmlpull.v1.XmlPullParserFactory
 import java.text.ParseException
+import java.io.File
 
 
 
@@ -107,6 +111,35 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private var currentDistance: Double = 0.0
     private lateinit var dbHelper: DatabaseHelper
     private var tiempoEntrada: Long = 0
+    private var pendingPoiLatitude: Double? = null
+    private var pendingPoiLongitude: Double? = null
+    private var pendingCameraPhoto: File? = null
+
+    private val takePoiPhotoLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
+        val photo = pendingCameraPhoto
+        if (saved && photo != null && photo.exists()) {
+            finishPhotoSelection(photo.absolutePath)
+        } else {
+            photo?.delete()
+            clearPendingPoi()
+        }
+        pendingCameraPhoto = null
+    }
+
+    private val selectPoiPhotoLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri == null) {
+            clearPendingPoi()
+            return@registerForActivityResult
+        }
+        try {
+            val photo = PoiPhotoStorage.copyToPrivateStorage(requireContext(), uri)
+            finishPhotoSelection(photo.absolutePath)
+        } catch (error: Exception) {
+            Log.e("HomeFragment", "No se pudo guardar la foto seleccionada", error)
+            Toast.makeText(requireContext(), "No se pudo guardar la foto", Toast.LENGTH_SHORT).show()
+            clearPendingPoi()
+        }
+    }
 
     // Flag para evitar animación en el primer callback tras volver a la pestaña
     private var skipNextLocationAnimation = false
@@ -1179,30 +1212,86 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             return
         }
         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            location?.let { showAddPoiDialog(it.latitude, it.longitude) }
+            location?.let { showPhotoSourceDialog(it.latitude, it.longitude) }
                 ?: Toast.makeText(requireContext(), "No se pudo obtener la ubicación", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun showAddPoiDialog(lat: Double, lon: Double) {
+    private fun showPhotoSourceDialog(lat: Double, lon: Double) {
+        pendingPoiLatitude = lat
+        pendingPoiLongitude = lon
+        AlertDialog.Builder(requireContext())
+            .setTitle("Punto de interés")
+            .setItems(arrayOf("Hacer foto", "Elegir de la galería", "Continuar sin foto")) { _, option ->
+                when (option) {
+                    0 -> takePoiPhoto()
+                    1 -> selectPoiPhotoLauncher.launch("image/*")
+                    2 -> finishPhotoSelection(null)
+                }
+            }
+            .setNegativeButton("Cancelar") { _, _ -> clearPendingPoi() }
+            .setOnCancelListener { clearPendingPoi() }
+            .show()
+    }
+
+    private fun takePoiPhoto() {
+        try {
+            val photo = PoiPhotoStorage.createPhotoFile(requireContext())
+            pendingCameraPhoto = photo
+            val uri = FileProvider.getUriForFile(
+                requireContext(),
+                "${requireContext().packageName}.fileprovider",
+                photo
+            )
+            takePoiPhotoLauncher.launch(uri)
+        } catch (error: Exception) {
+            Log.e("HomeFragment", "No se pudo abrir la cámara", error)
+            Toast.makeText(requireContext(), "No se pudo abrir la cámara", Toast.LENGTH_SHORT).show()
+            clearPendingPoi()
+        }
+    }
+
+    private fun finishPhotoSelection(photoReference: String?) {
+        val lat = pendingPoiLatitude
+        val lon = pendingPoiLongitude
+        clearPendingPoi()
+        if (lat != null && lon != null) {
+            showAddPoiDialog(lat, lon, photoReference)
+        }
+    }
+
+    private fun clearPendingPoi() {
+        pendingPoiLatitude = null
+        pendingPoiLongitude = null
+    }
+
+    private fun showAddPoiDialog(lat: Double, lon: Double, photoReference: String?) {
         val view = layoutInflater.inflate(R.layout.dialog_add_poi, null)
         val etComment = view.findViewById<EditText>(R.id.et_comment)
-        val etPhotoUrl = view.findViewById<EditText>(R.id.et_photo_url)
+        val photoPreview = view.findViewById<ImageView>(R.id.iv_photo_preview)
+        if (!photoReference.isNullOrEmpty()) {
+            photoPreview.visibility = View.VISIBLE
+            Glide.with(this)
+                .load(PoiPhotoStorage.glideModel(photoReference))
+                .into(photoPreview)
+        }
 
-        AlertDialog.Builder(requireContext())
+        var keepPhoto = false
+        val dialog = AlertDialog.Builder(requireContext())
             .setView(view)
             .setTitle("Agregar Punto de Interés")
             .setPositiveButton("Guardar") { _, _ ->
                 val comment = etComment.text.toString()
-                val photoUrl = etPhotoUrl.text.toString()
-                drawPoiMarker(lat, lon, comment, photoUrl)
+                keepPhoto = true
+                drawPoiMarker(lat, lon, comment, photoReference)
                 // Añadir a currentWaypoints para que se guarde con la ruta
                 if (currentWaypoints == null) currentWaypoints = mutableListOf()
                 val waypoint = WaypointInfo(
                     geoPoint = GeoPoint(lat, lon),
                     name = comment.ifEmpty { "Punto de Interés" },
                     description = comment,
-                    photoUrl = photoUrl
+                    photoUrl = "",
+                    userPhotoUrl = photoReference.orEmpty()
                 )
                 // Si la lista es inmutable, la convertimos a mutable
                 if (currentWaypoints !is MutableList) {
@@ -1213,17 +1302,21 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 Toast.makeText(requireContext(), "Punto de interés agregado", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Cancelar", null)
-            .show()
+            .create()
+        dialog.setOnDismissListener {
+            if (!keepPhoto && !photoReference.isNullOrEmpty()) File(photoReference).delete()
+        }
+        dialog.show()
     }
 
-    private fun drawPoiMarker(lat: Double, lon: Double, comment: String, photoUrl: String?) {
+    private fun drawPoiMarker(lat: Double, lon: Double, comment: String, photoReference: String?) {
         val poiMarker = Marker(mapView).apply {
             position = GeoPoint(lat, lon)
             title = "Punto de Interés"
             snippet = comment
             icon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_poi)
             setOnMarkerClickListener { marker, _ ->
-                showPoiDetailsDialog(marker.snippet, photoUrl)
+                showPoiDetailsDialog(marker.snippet, photoReference)
                 true
             }
         }
@@ -1231,15 +1324,25 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         mapView.invalidate()
     }
 
-    private fun showPoiDetailsDialog(comment: String, photoUrl:String?) {
+    private fun showPoiDetailsDialog(comment: String, photoReference: String?) {
         val view = layoutInflater.inflate(R.layout.dialog_poi_details, null)
         val tvComment = view.findViewById<TextView>(R.id.tv_comment)
         val ivPhoto = view.findViewById<ImageView>(R.id.iv_photo)
 
         tvComment.text = comment ?: "Sin comentario"
-        if (!photoUrl.isNullOrEmpty()) {
-            ivPhoto.setOnClickListener { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(photoUrl))) }
-            ivPhoto.setImageResource(R.drawable.ic_image_link)
+        if (!photoReference.isNullOrEmpty()) {
+            Glide.with(this)
+                .load(PoiPhotoStorage.glideModel(photoReference))
+                .placeholder(R.drawable.ic_image_link)
+                .error(R.drawable.ic_no_image)
+                .into(ivPhoto)
+            ivPhoto.setOnClickListener {
+                try {
+                    PoiPhotoStorage.openPhoto(requireContext(), photoReference)
+                } catch (error: Exception) {
+                    Toast.makeText(requireContext(), "No se puede abrir la foto", Toast.LENGTH_SHORT).show()
+                }
+            }
         } else {
             ivPhoto.setImageResource(R.drawable.ic_no_image)
         }
