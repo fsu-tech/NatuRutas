@@ -5,6 +5,7 @@ import android.graphics.Paint
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -15,8 +16,11 @@ import com.example.gpxeditor.util.PoiPhotoStorage
 import com.example.gpxeditor.model.database.DatabaseHelper
 import com.example.gpxeditor.model.entities.PuntoInteres
 import com.example.gpxeditor.model.entities.Route
+import org.osmdroid.config.Configuration
+import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import kotlin.math.pow
@@ -31,9 +35,19 @@ class RouteDetailActivity : AppCompatActivity() {
     private lateinit var routeNameTypeTextView: TextView
     private lateinit var insigniasButton: Button
     private lateinit var insigniasDesbloqueadasLayout: LinearLayout
+    private lateinit var detailScrollView: ScrollView
+    private lateinit var detailContent: RelativeLayout
+    private lateinit var mapFullscreenButton: ImageButton
+    private var isMapFullscreen = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        Configuration.getInstance().apply {
+            load(applicationContext, getSharedPreferences(packageName, MODE_PRIVATE))
+            userAgentValue = "NatuRutas/1.0 (Android; com.example.gpxeditor)"
+        }
+
         setContentView(R.layout.activity_route_detail)
 
         val routeId = intent.getLongExtra("route_id", -1L)
@@ -46,10 +60,21 @@ class RouteDetailActivity : AppCompatActivity() {
             route = routeNullable
             statsTextView = findViewById(R.id.statsTextView)
             routeMapView = findViewById(R.id.routeMapView)
+            val cartoVoyager = XYTileSource(
+                "CARTO Voyager", 0, 20, 256, ".png",
+                arrayOf("https://a.basemaps.cartocdn.com/rastertiles/voyager/"),
+                "© OpenStreetMap contributors, © CARTO"
+            )
+            routeMapView.setTileSource(cartoVoyager)
+            routeMapView.setMultiTouchControls(true)
+            routeMapView.overlays.add(CopyrightOverlay(this))
             deleteButton = findViewById(R.id.deleteButton)
             routeNameTypeTextView = findViewById(R.id.routeNameTypeTextView)
             insigniasButton = findViewById(R.id.insigniasButton)
             insigniasDesbloqueadasLayout = findViewById(R.id.insigniasDesbloqueadasLayout)
+            detailScrollView = findViewById(R.id.detailScrollView)
+            detailContent = findViewById(R.id.detailContent)
+            mapFullscreenButton = findViewById(R.id.mapFullscreenButton)
             routeNameTypeTextView.text = "${route.name} (${route.tipoRuta})"
 
             val points = dbHelper.getRoutePoints(routeId)
@@ -76,11 +101,77 @@ class RouteDetailActivity : AppCompatActivity() {
                 mostrarMenuInsignias()
             }
 
+            mapFullscreenButton.setOnClickListener {
+                setMapFullscreen(!isMapFullscreen)
+            }
+
             mostrarInsigniasDesbloqueadas(routeId)
         } else {
             Toast.makeText(this, "Error al cargar la ruta", Toast.LENGTH_SHORT).show()
             finish()
         }
+    }
+
+    private fun setMapFullscreen(fullscreen: Boolean) {
+        isMapFullscreen = fullscreen
+        val detailVisibility = if (fullscreen) View.GONE else View.VISIBLE
+        routeNameTypeTextView.visibility = detailVisibility
+        statsTextView.visibility = detailVisibility
+        insigniasButton.visibility = detailVisibility
+        insigniasDesbloqueadasLayout.visibility = detailVisibility
+        deleteButton.visibility = detailVisibility
+
+        val padding = if (fullscreen) 0 else (16 * resources.displayMetrics.density).toInt()
+        detailContent.setPadding(padding, padding, padding, padding)
+        mapFullscreenButton.setImageResource(
+            if (fullscreen) R.drawable.ic_fullscreen_exit else R.drawable.ic_fullscreen
+        )
+        mapFullscreenButton.contentDescription = getString(
+            if (fullscreen) R.string.collapse_map else R.string.expand_map
+        )
+
+        detailScrollView.post {
+            val params = routeMapView.layoutParams as RelativeLayout.LayoutParams
+            params.height = if (fullscreen) {
+                detailScrollView.height
+            } else {
+                (250 * resources.displayMetrics.density).toInt()
+            }
+            if (fullscreen) {
+                params.removeRule(RelativeLayout.BELOW)
+                params.addRule(RelativeLayout.ALIGN_PARENT_TOP)
+            } else {
+                params.removeRule(RelativeLayout.ALIGN_PARENT_TOP)
+                params.addRule(RelativeLayout.BELOW, R.id.statsTextView)
+            }
+            routeMapView.layoutParams = params
+            routeMapView.invalidate()
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
+        if (isMapFullscreen) {
+            setMapFullscreen(false)
+        } else {
+            super.onBackPressed()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::routeMapView.isInitialized) routeMapView.onResume()
+    }
+
+    override fun onPause() {
+        if (::routeMapView.isInitialized) routeMapView.onPause()
+        super.onPause()
+    }
+
+    override fun onDestroy() {
+        if (::routeMapView.isInitialized) routeMapView.onDetach()
+        if (::dbHelper.isInitialized) dbHelper.close()
+        super.onDestroy()
     }
 
     private fun mostrarMenuInsignias() {

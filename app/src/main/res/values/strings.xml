@@ -4,6 +4,8 @@
         <string name="app_name">NatuRutas</string>
         <string name="no_points_found">No se encontraron puntos de ruta en el archivo GPX</string>
         <string name="delete_route">Eliminar ruta</string>
+        <string name="expand_map">Ampliar mapa</string>
+        <string name="collapse_map">Cerrar mapa ampliado</string>
 
         <string-array name="route_types">
                 <item>Senderismo</item>

@@ -45,9 +45,10 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.*
 import org.osmdroid.config.Configuration
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import org.xmlpull.v1.XmlPullParser
@@ -292,8 +293,14 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         Configuration.getInstance().load(requireContext(), requireActivity().getPreferences(0))
         mapView = view.findViewById(R.id.mapView)
-        mapView.setTileSource(TileSourceFactory.MAPNIK)
+        val cartoVoyager = XYTileSource(
+            "CARTO Voyager", 0, 20, 256, ".png",
+            arrayOf("https://a.basemaps.cartocdn.com/rastertiles/voyager/"),
+            "© OpenStreetMap contributors, © CARTO"
+        )
+        mapView.setTileSource(cartoVoyager)
         mapView.setMultiTouchControls(true)
+        mapView.overlays.add(CopyrightOverlay(requireContext()))
 
         // Restaurar puntos y distancia de la grabación al volver al fragmento (después de inicializar mapView)
         restoreRecordingPoints()
