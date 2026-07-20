@@ -60,14 +60,12 @@ class RouteDetailActivity : AppCompatActivity() {
             route = routeNullable
             statsTextView = findViewById(R.id.statsTextView)
             routeMapView = findViewById(R.id.routeMapView)
-            val cartoVoyager = XYTileSource(
-                "CARTO Voyager", 0, 20, 256, ".png",
-                arrayOf("https://a.basemaps.cartocdn.com/rastertiles/voyager/"),
-                "© OpenStreetMap contributors, © CARTO"
-            )
-            routeMapView.setTileSource(cartoVoyager)
+            com.example.gpxeditor.util.MapStyleManager.applySavedStyle(this, routeMapView)
             routeMapView.setMultiTouchControls(true)
             routeMapView.overlays.add(CopyrightOverlay(this))
+            findViewById<View>(R.id.mapStyleButton).setOnClickListener {
+                com.example.gpxeditor.util.MapStyleManager.showSelector(this, routeMapView)
+            }
             deleteButton = findViewById(R.id.deleteButton)
             routeNameTypeTextView = findViewById(R.id.routeNameTypeTextView)
             insigniasButton = findViewById(R.id.insigniasButton)

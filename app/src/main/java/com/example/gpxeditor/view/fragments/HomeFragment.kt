@@ -293,14 +293,12 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         Configuration.getInstance().load(requireContext(), requireActivity().getPreferences(0))
         mapView = view.findViewById(R.id.mapView)
-        val cartoVoyager = XYTileSource(
-            "CARTO Voyager", 0, 20, 256, ".png",
-            arrayOf("https://a.basemaps.cartocdn.com/rastertiles/voyager/"),
-            "© OpenStreetMap contributors, © CARTO"
-        )
-        mapView.setTileSource(cartoVoyager)
+        com.example.gpxeditor.util.MapStyleManager.applySavedStyle(requireContext(), mapView)
         mapView.setMultiTouchControls(true)
         mapView.overlays.add(CopyrightOverlay(requireContext()))
+        view.findViewById<View>(R.id.mapStyleButton).setOnClickListener {
+            com.example.gpxeditor.util.MapStyleManager.showSelector(requireContext(), mapView)
+        }
 
         // Restaurar puntos y distancia de la grabación al volver al fragmento (después de inicializar mapView)
         restoreRecordingPoints()
