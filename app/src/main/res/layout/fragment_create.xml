@@ -9,6 +9,20 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
+    <ImageButton
+        android:id="@+id/mapStyleButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="16dp"
+        android:background="@color/naturutas_surface"
+        android:contentDescription="@string/select_map_style"
+        android:elevation="8dp"
+        android:padding="12dp"
+        android:src="@drawable/ic_map"
+        app:tint="@color/naturutas_primary" />
+
 
 
 
@@ -65,7 +79,6 @@
     </LinearLayout>
 
 </RelativeLayout>
-
 
 
 

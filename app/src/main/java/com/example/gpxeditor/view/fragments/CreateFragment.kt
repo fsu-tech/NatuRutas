@@ -76,8 +76,11 @@ class CreateFragment : Fragment(R.layout.fragment_create) {
                 Toast.makeText(requireContext(), "Error: no se pudo cargar el mapa", Toast.LENGTH_LONG).show()
                 return
             }
-            mapView.setTileSource(TileSourceFactory.MAPNIK)
+            com.example.gpxeditor.util.MapStyleManager.applySavedStyle(requireContext(), mapView)
             mapView.setMultiTouchControls(true)
+            view.findViewById<View>(R.id.mapStyleButton).setOnClickListener {
+                com.example.gpxeditor.util.MapStyleManager.showSelector(requireContext(), mapView)
+            }
 
             val mapController = mapView.controller
             val startPoint = GeoPoint(40.4168, -3.7038)
