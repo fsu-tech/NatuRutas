@@ -57,6 +57,7 @@ import java.io.IOException
 import java.io.InputStream
 import com.example.gpxeditor.model.database.DatabaseHelper
 import com.example.gpxeditor.model.services.MiServicio
+import com.example.gpxeditor.model.services.RouteNavigationService
 import org.osmdroid.views.overlay.Overlay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -74,6 +75,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         private lateinit var btnSaveRoute: Button
         private lateinit var btnPauseRoute: Button
         private lateinit var btnResumeRoute: Button
+        private lateinit var navigationStatusText: TextView
         private var isRecording: Boolean = false
         private var isPaused: Boolean = false
         private var startTime: Long = 0
@@ -162,6 +164,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     }
 
     private var recordingReceiverRegistered = false
+    private var navigationReceiverRegistered = false
     private val recordingUpdatesReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (!isAdded || view == null) return
@@ -173,6 +176,16 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     it.hasExtra(MiServicio.EXTRA_LONGITUDE)
                 }?.getDoubleExtra(MiServicio.EXTRA_LONGITUDE, 0.0)
             )
+        }
+    }
+
+    private val navigationStatusReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (!isAdded || view == null || intent == null) return
+            val status = intent.getStringExtra(RouteNavigationService.EXTRA_STATUS) ?: return
+            val distance = intent.getDoubleExtra(RouteNavigationService.EXTRA_DISTANCE, Double.NaN)
+            val progress = intent.getDoubleExtra(RouteNavigationService.EXTRA_PROGRESS, 0.0)
+            updateNavigationStatus(status, distance, progress)
         }
     }
 
@@ -336,14 +349,19 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         btnSaveRoute = view.findViewById(R.id.btnSaveRoute)
         btnPauseRoute = view.findViewById(R.id.btnPauseRoute)
         btnResumeRoute = view.findViewById(R.id.btnResumeRoute)
+        navigationStatusText = view.findViewById(R.id.navigationStatusText)
 
         btnStartRoute.setOnClickListener {
             dbHelper.registrarEvento("Grabacion", "iniciar_grabacion", null)
             startRecording()
+            if (isRecording && sharedPreferences.contains(RUTA_POINTS_KEY)) {
+                startRouteNavigation()
+            }
         }
         btnStopRoute.setOnClickListener {
             dbHelper.registrarEvento("Grabacion", "parar_grabacion", null)
             stopRecording()
+            stopRouteNavigation()
         }
         btnSaveRoute.setOnClickListener {
             dbHelper.registrarEvento("Grabacion", "guardar_ruta", null)
@@ -363,6 +381,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
 
         view.findViewById<Button?>(R.id.btnRemoveLoadedRoute)?.setOnClickListener {
+            stopRouteNavigation()
             polyline?.let {
                 mapView.overlays.remove(it)
                 polyline = null
@@ -432,6 +451,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     }
 
     private fun loadGpxFromUri(uri: Uri) {
+        stopRouteNavigation()
         limpiarRecursos()
         loadJob = scope.launch(Dispatchers.IO) {
             try {
@@ -698,7 +718,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         polyline?.let {
             mapView.overlays.add(it)
         }
-
         mapView.controller.setCenter(points.first())
         mapView.controller.setZoom(15.0)
 
@@ -853,6 +872,55 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             if (isRecording && !isPaused) {
                 mapView.controller.setCenter(geoPoint)
                 mapView.controller.setZoom(17.0)
+            }
+        }
+    }
+
+    private fun startRouteNavigation() {
+        if (!sharedPreferences.contains(RUTA_POINTS_KEY)) {
+            Toast.makeText(requireContext(), "Carga primero una ruta GPX", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestLocationPermissions()
+            Toast.makeText(requireContext(), "Concede la ubicación y vuelve a pulsar Iniciar navegación", Toast.LENGTH_LONG).show()
+            return
+        }
+        ContextCompat.startForegroundService(
+            requireContext(),
+            Intent(requireContext(), RouteNavigationService::class.java).setAction(RouteNavigationService.ACTION_START_NAVIGATION)
+        )
+        isNavigating = true
+        navigationStatusText.visibility = View.VISIBLE
+        navigationStatusText.setTextColor(ContextCompat.getColor(requireContext(), R.color.naturutas_secondary_text))
+        navigationStatusText.text = "Buscando tu posición y la ruta cargada…"
+    }
+
+    private fun stopRouteNavigation() {
+        if (isNavigating) {
+            requireContext().startService(
+                Intent(requireContext(), RouteNavigationService::class.java).setAction(RouteNavigationService.ACTION_STOP_NAVIGATION)
+            )
+        }
+        isNavigating = false
+        if (::navigationStatusText.isInitialized) navigationStatusText.visibility = View.GONE
+    }
+
+    private fun updateNavigationStatus(status: String, distance: Double, progress: Double) {
+        isNavigating = status != RouteNavigationService.STATUS_STOPPED
+        navigationStatusText.visibility = if (isNavigating) View.VISIBLE else View.GONE
+        when (status) {
+            RouteNavigationService.STATUS_APPROACHING -> {
+                navigationStatusText.setTextColor(ContextCompat.getColor(requireContext(), R.color.naturutas_secondary_text))
+                navigationStatusText.text = if (distance.isNaN()) "Buscando tu posición y la ruta cargada…" else "Acércate a la ruta: ${distance.toInt()} m"
+            }
+            RouteNavigationService.STATUS_ON_ROUTE -> {
+                navigationStatusText.setTextColor(ContextCompat.getColor(requireContext(), R.color.naturutas_primary))
+                navigationStatusText.text = "Vas por la ruta · %.1f km".format(Locale("es", "ES"), progress / 1000.0)
+            }
+            RouteNavigationService.STATUS_OFF_ROUTE -> {
+                navigationStatusText.setTextColor(ContextCompat.getColor(requireContext(), R.color.naturutas_error))
+                navigationStatusText.text = "Te has alejado ${distance.toInt()} m de la ruta"
             }
         }
     }
@@ -1102,12 +1170,25 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             )
             recordingReceiverRegistered = true
         }
+        if (!navigationReceiverRegistered) {
+            ContextCompat.registerReceiver(
+                requireContext(),
+                navigationStatusReceiver,
+                IntentFilter(RouteNavigationService.ACTION_NAVIGATION_STATUS),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            navigationReceiverRegistered = true
+        }
     }
 
     override fun onStop() {
         if (recordingReceiverRegistered) {
             requireContext().unregisterReceiver(recordingUpdatesReceiver)
             recordingReceiverRegistered = false
+        }
+        if (navigationReceiverRegistered) {
+            requireContext().unregisterReceiver(navigationStatusReceiver)
+            navigationReceiverRegistered = false
         }
         super.onStop()
     }
@@ -1116,8 +1197,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         super.onResume()
         tiempoEntrada = System.currentTimeMillis()
         Log.d("HomeFragment", "onResume called")
-        isNavigating = false
+        isNavigating = sharedPreferences.getBoolean(RouteNavigationService.NAVIGATION_ACTIVE_KEY, false)
         restoreRouteFromPrefs()
+        if (::navigationStatusText.isInitialized) navigationStatusText.visibility = if (isNavigating) View.VISIBLE else View.GONE
         requestNotificationPermission()
         loadRouteData()
         if (isRecording) {
@@ -1500,7 +1582,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             polyline = null
             mapView.overlays.removeAll(gpxOverlays.toList())
             gpxOverlays.clear()
-
             if (hasRecordingPoints) {
                 if (recordingPolyline == null) {
                     recordingPolyline = DirectionalRouteOverlay().apply {

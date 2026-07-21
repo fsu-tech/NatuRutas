@@ -74,6 +74,11 @@
             android:stopWithTask="false"
             android:foregroundServiceType="location" />
 
+        <service
+            android:name=".model.services.RouteNavigationService"
+            android:stopWithTask="false"
+            android:foregroundServiceType="location" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
