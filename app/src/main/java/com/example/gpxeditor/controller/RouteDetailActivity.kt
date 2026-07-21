@@ -22,7 +22,7 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.Marker
-import org.osmdroid.views.overlay.Polyline
+import com.example.gpxeditor.view.customviews.DirectionalRouteOverlay
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -262,13 +262,13 @@ class RouteDetailActivity : AppCompatActivity() {
     }
 
     private fun drawRouteOnMap(points: List<GeoPoint>) {
-        val polyline = Polyline().apply {
+        val polyline = DirectionalRouteOverlay().apply {
             setPoints(points)
             outlinePaint.color = ContextCompat.getColor(
                 this@RouteDetailActivity,
                 R.color.naturutas_primary
             )
-            outlinePaint.strokeWidth = 8f
+            outlinePaint.strokeWidth = 10f
             outlinePaint.strokeCap = Paint.Cap.ROUND
             outlinePaint.strokeJoin = Paint.Join.ROUND
             outlinePaint.isAntiAlias = true

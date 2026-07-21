@@ -30,7 +30,7 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
-import org.osmdroid.views.overlay.Polyline
+import com.example.gpxeditor.view.customviews.DirectionalRouteOverlay
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -40,7 +40,7 @@ class CreateFragment : Fragment(R.layout.fragment_create) {
     private lateinit var btnStopRoute: Button
     private lateinit var btnSaveRoute: Button
     private lateinit var btnRecomendaciones: Button
-    private lateinit var routeLine: Polyline
+    private lateinit var routeLine: DirectionalRouteOverlay
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
     private var userMarker: Marker? = null
@@ -124,7 +124,7 @@ class CreateFragment : Fragment(R.layout.fragment_create) {
             resumeRoute()
         }
 
-        routeLine = Polyline().apply { width = 5f }
+        routeLine = DirectionalRouteOverlay().apply { width = 10f }
         mapView.overlays.add(routeLine)
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
