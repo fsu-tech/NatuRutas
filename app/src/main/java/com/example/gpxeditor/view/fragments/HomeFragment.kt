@@ -50,7 +50,7 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.Marker
-import org.osmdroid.views.overlay.Polyline
+import com.example.gpxeditor.view.customviews.DirectionalRouteOverlay
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
 import java.io.IOException
@@ -85,8 +85,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private val LOCATION_PERMISSION_CODE = 102
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var locationMarker: Marker? = null
-    private var polyline: Polyline? = null // Polyline de la ruta cargada
-    private var recordingPolyline: Polyline? = null // Polyline de la ruta grabada
+    private var polyline: DirectionalRouteOverlay? = null // Ruta cargada con indicadores de dirección
+    private var recordingPolyline: DirectionalRouteOverlay? = null // Ruta grabada con indicadores de dirección
     private val gpxOverlays = mutableListOf<Overlay>()
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var loadJob: Job? = null
@@ -212,9 +212,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val hasRecordingPoints = !currentPoints.isNullOrEmpty()
         if (hasRecordingPoints) {
             if (recordingPolyline == null) {
-                recordingPolyline = Polyline().apply {
+                recordingPolyline = DirectionalRouteOverlay().apply {
                     outlinePaint.color = Color.parseColor("#FF9800")
-                    outlinePaint.strokeWidth = 8f
+                    outlinePaint.strokeWidth = 10f
                 }
                 mapView.overlays.add(recordingPolyline)
             }
@@ -306,9 +306,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         // Si hay puntos, dibujar la polyline
         if (!currentPoints.isNullOrEmpty()) {
             if (recordingPolyline == null) {
-                recordingPolyline = Polyline().apply {
+                recordingPolyline = DirectionalRouteOverlay().apply {
                     outlinePaint.color = Color.parseColor("#FF9800")
-                    outlinePaint.strokeWidth = 8f
+                    outlinePaint.strokeWidth = 10f
                 }
                 mapView.overlays.add(recordingPolyline)
             }
@@ -690,10 +690,10 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             return
         }
 
-        polyline = Polyline().apply {
+        polyline = DirectionalRouteOverlay().apply {
             setPoints(points)
             outlinePaint.color = Color.parseColor("#1976D2") // Azul fuerte
-            outlinePaint.strokeWidth = 8f
+            outlinePaint.strokeWidth = 10f
         }
         polyline?.let {
             mapView.overlays.add(it)
@@ -1157,9 +1157,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         // Persistir el reinicio inmediatamente para que nunca reaparezcan puntos antiguos.
         saveRecordingPoints()
         saveRouteData()
-        recordingPolyline = Polyline().apply {
+        recordingPolyline = DirectionalRouteOverlay().apply {
             outlinePaint.color = Color.parseColor("#FF9800") // Naranja para la grabación
-            outlinePaint.strokeWidth = 8f
+            outlinePaint.strokeWidth = 10f
         }
         mapView.overlays.add(recordingPolyline)
         mapView.invalidate()
@@ -1471,9 +1471,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             // Restaurar la polyline de grabación independientemente de la ruta GPX cargada.
             if (hasRecordingPoints) {
                 recordingPolyline?.let { mapView.overlays.remove(it) }
-                recordingPolyline = Polyline().apply {
+                recordingPolyline = DirectionalRouteOverlay().apply {
                     outlinePaint.color = Color.parseColor("#FF9800")
-                    outlinePaint.strokeWidth = 8f
+                    outlinePaint.strokeWidth = 10f
                 }
                 recordingPolyline?.setPoints(currentPoints)
                 mapView.overlays.add(recordingPolyline)
@@ -1503,9 +1503,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
             if (hasRecordingPoints) {
                 if (recordingPolyline == null) {
-                    recordingPolyline = Polyline().apply {
+                    recordingPolyline = DirectionalRouteOverlay().apply {
                         outlinePaint.color = Color.parseColor("#FF9800")
-                        outlinePaint.strokeWidth = 8f
+                        outlinePaint.strokeWidth = 10f
                     }
                     mapView.overlays.add(recordingPolyline)
                 }
