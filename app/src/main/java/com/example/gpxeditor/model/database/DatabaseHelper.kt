@@ -15,6 +15,7 @@ import java.lang.IllegalArgumentException
 class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
+        private const val ELEVATION_SMOOTHING_RADIUS = 2
         private const val DATABASE_NAME = "rutas.db"
         private const val DATABASE_VERSION = 8
 
@@ -393,6 +394,87 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         val velocidad_promedio: Double,
         val desnivelAcumulado: Double
     )
+
+    data class ElevationRangeMetrics(
+        val minimum: Double,
+        val maximum: Double,
+        val elevationRange: Double,
+        val distanceBetweenExtremes: Double,
+        val averageSlopePercent: Double
+    )
+
+    data class ElevationProfilePoint(
+        val distanceMeters: Double,
+        val altitudeMeters: Double
+    )
+
+    fun getElevationProfile(routeId: Long): List<ElevationProfilePoint> {
+        val points = getRoutePoints(routeId).filter { it.altitude.isFinite() }
+        if (points.isEmpty()) return emptyList()
+
+        val smoothedAltitudes = points.indices.map { index ->
+            val from = (index - ELEVATION_SMOOTHING_RADIUS).coerceAtLeast(0)
+            val to = (index + ELEVATION_SMOOTHING_RADIUS).coerceAtMost(points.lastIndex)
+            points.subList(from, to + 1).map { it.altitude }.average()
+        }
+
+        var accumulatedDistance = 0.0
+        return points.indices.map { index ->
+            if (index > 0) {
+                val results = FloatArray(1)
+                Location.distanceBetween(
+                    points[index - 1].latitude,
+                    points[index - 1].longitude,
+                    points[index].latitude,
+                    points[index].longitude,
+                    results
+                )
+                accumulatedDistance += results[0]
+            }
+            ElevationProfilePoint(accumulatedDistance, smoothedAltitudes[index])
+        }
+    }
+
+    fun getElevationRangeMetrics(routeId: Long): ElevationRangeMetrics {
+        val points = getRoutePoints(routeId).filter { it.altitude.isFinite() }
+        val altitudes = points.map { it.altitude }
+
+        if (altitudes.isEmpty()) return ElevationRangeMetrics(0.0, 0.0, 0.0, 0.0, 0.0)
+
+        // Una media móvil reduce las oscilaciones pequeñas propias de la altitud GPS.
+        val smoothed = altitudes.indices.map { index ->
+            val from = (index - ELEVATION_SMOOTHING_RADIUS).coerceAtLeast(0)
+            val to = (index + ELEVATION_SMOOTHING_RADIUS).coerceAtMost(altitudes.lastIndex)
+            altitudes.subList(from, to + 1).average()
+        }
+
+        val minimum = smoothed.minOrNull() ?: 0.0
+        val maximum = smoothed.maxOrNull() ?: 0.0
+        val minimumIndex = smoothed.indexOfFirst { it == minimum }
+        val maximumIndex = smoothed.indexOfFirst { it == maximum }
+        val firstExtreme = minOf(minimumIndex, maximumIndex)
+        val lastExtreme = maxOf(minimumIndex, maximumIndex)
+        var distanceBetweenExtremes = 0.0
+        for (index in firstExtreme until lastExtreme) {
+            val results = FloatArray(1)
+            Location.distanceBetween(
+                points[index].latitude,
+                points[index].longitude,
+                points[index + 1].latitude,
+                points[index + 1].longitude,
+                results
+            )
+            distanceBetweenExtremes += results[0]
+        }
+        val elevationRange = maximum - minimum
+        return ElevationRangeMetrics(
+            minimum = minimum,
+            maximum = maximum,
+            elevationRange = elevationRange,
+            distanceBetweenExtremes = distanceBetweenExtremes,
+            averageSlopePercent = if (distanceBetweenExtremes > 0.0) elevationRange / distanceBetweenExtremes * 100.0 else 0.0
+        )
+    }
 
     fun getEstadisticasByRouteId(routeId: Long): EstadisticasData? {
         val db = readableDatabase
