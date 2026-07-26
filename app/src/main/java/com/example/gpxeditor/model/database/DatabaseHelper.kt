@@ -605,6 +605,18 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         }
     }
 
+    fun updateRouteType(routeId: Long, routeType: String): Boolean {
+        val values = ContentValues().apply {
+            put(COLUMN_RUTA_TIPO, routeType)
+        }
+        return writableDatabase.update(
+            TABLE_RUTAS,
+            values,
+            "$COLUMN_RUTA_ID = ?",
+            arrayOf(routeId.toString())
+        ) > 0
+    }
+
     fun deleteRoute(routeId: Long): Int {
         val db = writableDatabase
         return db.delete(TABLE_RUTAS, "$COLUMN_RUTA_ID = ?", arrayOf(routeId.toString()))

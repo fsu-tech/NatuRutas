@@ -20,11 +20,19 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
+        <Button
+            android:id="@+id/editRouteTypeButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/routeNameTypeTextView"
+            android:layout_marginStart="8dp"
+            android:text="@string/edit_route_type" />
+
         <TextView
             android:id="@+id/statsTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/routeNameTypeTextView"
+            android:layout_below="@id/editRouteTypeButton"
             android:padding="8dp"
             android:text="Estadísticas" />
 
