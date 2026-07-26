@@ -4,7 +4,8 @@
     <color name="white">#FFFFFFFF</color>
     <color name="teal_200">#03DAC5</color>
     <color name="naturutas_primary">#176B45</color>
-    <color name="naturutas_poi_photo">#E86F00</color>
+    <color name="naturutas_poi_photo">#F9C74F</color>
+    <color name="naturutas_route">#E86F00</color>
     <color name="naturutas_on_primary">#FFFFFFFF</color>
     <color name="naturutas_surface">#FFFBFE</color>
     <color name="naturutas_background">#F2F6F3</color>

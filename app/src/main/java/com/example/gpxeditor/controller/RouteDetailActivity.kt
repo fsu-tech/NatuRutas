@@ -23,6 +23,7 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.Marker
 import com.example.gpxeditor.view.customviews.DirectionalRouteOverlay
+import com.example.gpxeditor.view.customviews.ZoomableImageView
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -38,6 +39,7 @@ class RouteDetailActivity : AppCompatActivity() {
     private lateinit var detailScrollView: ScrollView
     private lateinit var detailContent: RelativeLayout
     private lateinit var mapFullscreenButton: ImageButton
+    private lateinit var editRouteTypeButton: Button
     private var isMapFullscreen = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,7 +75,8 @@ class RouteDetailActivity : AppCompatActivity() {
             detailScrollView = findViewById(R.id.detailScrollView)
             detailContent = findViewById(R.id.detailContent)
             mapFullscreenButton = findViewById(R.id.mapFullscreenButton)
-            routeNameTypeTextView.text = "${route.name} (${route.tipoRuta})"
+            editRouteTypeButton = findViewById(R.id.editRouteTypeButton)
+            updateRouteTitle()
 
             val points = dbHelper.getRoutePoints(routeId)
             drawRouteOnMap(points)
@@ -95,6 +98,10 @@ class RouteDetailActivity : AppCompatActivity() {
                 showDeleteConfirmationDialog(routeId)
             }
 
+            editRouteTypeButton.setOnClickListener {
+                showEditRouteTypeDialog()
+            }
+
             insigniasButton.setOnClickListener {
                 mostrarMenuInsignias()
             }
@@ -114,6 +121,7 @@ class RouteDetailActivity : AppCompatActivity() {
         isMapFullscreen = fullscreen
         val detailVisibility = if (fullscreen) View.GONE else View.VISIBLE
         routeNameTypeTextView.visibility = detailVisibility
+        editRouteTypeButton.visibility = detailVisibility
         statsTextView.visibility = detailVisibility
         insigniasButton.visibility = detailVisibility
         insigniasDesbloqueadasLayout.visibility = detailVisibility
@@ -145,6 +153,35 @@ class RouteDetailActivity : AppCompatActivity() {
             routeMapView.layoutParams = params
             routeMapView.invalidate()
         }
+    }
+
+    private fun updateRouteTitle() {
+        val routeType = route.tipoRuta?.takeIf { it.isNotBlank() } ?: "Otro"
+        routeNameTypeTextView.text = "${route.name} ($routeType)"
+    }
+
+    private fun showEditRouteTypeDialog() {
+        val routeTypes = resources.getStringArray(R.array.route_types)
+        val currentType = route.tipoRuta?.takeIf { it.isNotBlank() } ?: "Otro"
+        var selectedIndex = routeTypes.indexOf(currentType).takeIf { it >= 0 } ?: 0
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.edit_route_type)
+            .setSingleChoiceItems(routeTypes, selectedIndex) { _, which ->
+                selectedIndex = which
+            }
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Guardar") { _, _ ->
+                val selectedType = routeTypes[selectedIndex]
+                if (dbHelper.updateRouteType(route.id, selectedType)) {
+                    route = route.copy(tipoRuta = selectedType)
+                    updateRouteTitle()
+                    Toast.makeText(this, "Tipo de ruta actualizado", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "No se pudo actualizar el tipo de ruta", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .show()
     }
 
     @Suppress("DEPRECATION")
@@ -266,7 +303,7 @@ class RouteDetailActivity : AppCompatActivity() {
             setPoints(points)
             outlinePaint.color = ContextCompat.getColor(
                 this@RouteDetailActivity,
-                R.color.naturutas_primary
+                R.color.naturutas_route
             )
             outlinePaint.strokeWidth = 10f
             outlinePaint.strokeCap = Paint.Cap.ROUND
@@ -401,11 +438,7 @@ class RouteDetailActivity : AppCompatActivity() {
 
         ivPhoto.setOnClickListener {
             if (!imageUrlToOpen.isNullOrEmpty()) {
-                try {
-                    PoiPhotoStorage.openPhoto(this, imageUrlToOpen!!)
-                } catch (error: Exception) {
-                    Toast.makeText(this, "No se puede abrir la foto", Toast.LENGTH_SHORT).show()
-                }
+                showExpandedPhoto(imageUrlToOpen!!)
             }
         }
 
@@ -413,6 +446,25 @@ class RouteDetailActivity : AppCompatActivity() {
             .setTitle("Detalles del Punto de Interés")
             .setPositiveButton("Cerrar", null)
             .show()
+    }
+
+    private fun showExpandedPhoto(photoReference: String) {
+        val dialog = android.app.Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        dialog.setContentView(R.layout.dialog_photo_fullscreen)
+
+        val fullscreenPhoto = dialog.findViewById<ZoomableImageView>(R.id.fullscreenPhoto)
+        Glide.with(this)
+            .load(PoiPhotoStorage.glideModel(photoReference))
+            .placeholder(R.drawable.ic_image_link)
+            .error(R.drawable.ic_no_image)
+            .into(fullscreenPhoto)
+
+        Toast.makeText(this, R.string.photo_zoom_hint, Toast.LENGTH_SHORT).show()
+
+        dialog.findViewById<Button>(R.id.closeFullscreenPhotoButton).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.show()
     }
 
     private fun calculateDistance(points: List<GeoPoint>): Double {

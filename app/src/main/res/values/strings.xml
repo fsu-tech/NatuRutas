@@ -7,6 +7,10 @@
         <string name="delete_route">Eliminar ruta</string>
         <string name="expand_map">Ampliar mapa</string>
         <string name="collapse_map">Cerrar mapa ampliado</string>
+        <string name="edit_route_type">Editar tipo de ruta</string>
+        <string name="enlarged_poi_photo">Foto ampliada del punto de interés</string>
+        <string name="photo_zoom_hint">Pellizca con dos dedos para ampliar la foto</string>
+        <string name="close">Cerrar</string>
 
         <string-array name="route_types">
                 <item>Senderismo</item>
@@ -14,6 +18,7 @@
                 <item>Ecuestre</item>
                 <item>Coche</item>
                 <item>Moto</item>
+                <item>Otro</item>
         </string-array>
 
 
