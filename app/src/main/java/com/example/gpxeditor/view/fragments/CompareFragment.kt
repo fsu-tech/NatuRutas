@@ -2,7 +2,6 @@ package com.example.gpxeditor.view.fragments
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -14,7 +13,7 @@ import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.Spinner
 import androidx.fragment.app.Fragment
-import com.example.gpxeditor.view.customviews.DesnivelPositivoAcumuladoChartView
+import com.example.gpxeditor.view.customviews.AltitudeRangeChartView
 import com.example.gpxeditor.view.customviews.DistanceChartView
 import com.example.gpxeditor.view.customviews.DurationChartView
 import com.example.gpxeditor.view.customviews.PerfilElevacionView
@@ -172,7 +171,21 @@ class CompareFragment : Fragment() {
 
             if (selectedMetrics.contains("desnivel")) {
                 Log.d("CompareFragment", "Mostrando desnivel")
-                val desnivelChart = DesnivelPositivoAcumuladoChartView(requireContext(), estadisticas1.desnivelAcumulado, estadisticas2.desnivelAcumulado)
+                val elevation1 = dbHelper.getElevationRangeMetrics(route1.id)
+                val elevation2 = dbHelper.getElevationRangeMetrics(route2.id)
+                val desnivelChart = AltitudeRangeChartView(
+                    requireContext(),
+                    elevation1.minimum,
+                    elevation1.maximum,
+                    elevation1.elevationRange,
+                    elevation1.distanceBetweenExtremes,
+                    elevation1.averageSlopePercent,
+                    elevation2.minimum,
+                    elevation2.maximum,
+                    elevation2.elevationRange,
+                    elevation2.distanceBetweenExtremes,
+                    elevation2.averageSlopePercent
+                )
                 graphicLayout.addView(desnivelChart)
             }
 
@@ -185,22 +198,18 @@ class CompareFragment : Fragment() {
 
             if (selectedMetrics.contains("perfil")) {
                 Log.d("CompareFragment", "Mostrando perfil")
-                val perfil1 = PerfilElevacionView(requireContext(), obtenerAltitudes(route1.id), "Ruta 1", Color.BLUE).apply {
+                val perfil = PerfilElevacionView(
+                    requireContext(),
+                    dbHelper.getElevationProfile(route1.id),
+                    dbHelper.getElevationProfile(route2.id)
+                ).apply {
                     layoutParams = LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         0,
                         1f
                     )
                 }
-                val perfil2 = PerfilElevacionView(requireContext(), obtenerAltitudes(route2.id), "Ruta 2", Color.RED).apply {
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        0,
-                        1f
-                    )
-                }
-                graphicLayout.addView(perfil1)
-                graphicLayout.addView(perfil2)
+                graphicLayout.addView(perfil)
             }
         } else {
             Log.e("CompareFragment", "Estadísticas no encontradas para: $route1Name o $route2Name")
@@ -240,31 +249,4 @@ class CompareFragment : Fragment() {
 
     data class ChartData(val selectedMetrics: List<String>)
 
-    private fun obtenerAltitudes(routeId: Long): List<Double> {
-        val db =dbHelper.readableDatabase
-        val altitudes = mutableListOf<Double>()
-
-        val cursor = db.query(
-            DatabaseHelper.TABLE_PUNTOS_RUTA,
-            arrayOf(DatabaseHelper.COLUMN_PUNTOS_RUTA_ALTURA),
-            "${DatabaseHelper.COLUMN_PUNTOS_RUTA_RUTA_ID} = ?",
-            arrayOf(routeId.toString()),
-            null,
-            null,
-            DatabaseHelper.COLUMN_PUNTOS_RUTA_ORDEN
-        )
-
-        try {
-            while (cursor.moveToNext()) {
-                val altitude = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_PUNTOS_RUTA_ALTURA))
-                altitudes.add(altitude)
-            }
-        } catch (e: Exception) {
-            Log.e("CompareFragment", "Error getting altitudes: ${e.message}")
-        } finally {
-            cursor.close()
-        }
-
-        return altitudes
-    }
 }
