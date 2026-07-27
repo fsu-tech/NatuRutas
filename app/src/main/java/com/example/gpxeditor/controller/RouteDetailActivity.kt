@@ -64,6 +64,15 @@ class RouteDetailActivity : AppCompatActivity() {
             routeMapView = findViewById(R.id.routeMapView)
             com.example.gpxeditor.util.MapStyleManager.applySavedStyle(this, routeMapView)
             routeMapView.setMultiTouchControls(true)
+            routeMapView.zoomController.setVisibility(
+                org.osmdroid.views.CustomZoomButtonsController.Visibility.NEVER
+            )
+            findViewById<View>(R.id.mapZoomInButton).setOnClickListener {
+                routeMapView.controller.zoomIn()
+            }
+            findViewById<View>(R.id.mapZoomOutButton).setOnClickListener {
+                routeMapView.controller.zoomOut()
+            }
             routeMapView.overlays.add(CopyrightOverlay(this))
             findViewById<View>(R.id.mapStyleButton).setOnClickListener {
                 com.example.gpxeditor.util.MapStyleManager.showSelector(this, routeMapView)

@@ -49,7 +49,7 @@
             android:layout_alignTop="@id/routeMapView"
             android:layout_alignEnd="@id/routeMapView"
             android:layout_margin="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/bg_map_control"
             android:contentDescription="@string/expand_map"
             android:padding="12dp"
             android:src="@drawable/ic_fullscreen"
@@ -62,11 +62,37 @@
             android:layout_alignTop="@id/routeMapView"
             android:layout_toStartOf="@id/mapFullscreenButton"
             android:layout_margin="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/bg_map_control"
             android:contentDescription="@string/select_map_style"
             android:padding="12dp"
             android:src="@drawable/ic_map" />
 
+        <ImageButton
+            android:id="@+id/mapZoomInButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_alignEnd="@id/routeMapView"
+            android:layout_alignBottom="@id/routeMapView"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_map_control"
+            android:contentDescription="Acercar mapa"
+            android:elevation="6dp"
+            android:padding="12dp"
+            android:src="@drawable/ic_zoom_in" />
+
+        <ImageButton
+            android:id="@+id/mapZoomOutButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_alignEnd="@id/mapZoomInButton"
+            android:layout_above="@id/mapZoomInButton"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_map_control"
+            android:contentDescription="Alejar mapa"
+            android:elevation="6dp"
+            android:padding="12dp"
+            android:src="@drawable/ic_zoom_out" />
         <Button
             android:id="@+id/insigniasButton"
             android:layout_width="wrap_content"

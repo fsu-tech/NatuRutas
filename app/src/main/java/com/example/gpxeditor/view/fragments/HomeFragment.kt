@@ -312,6 +312,15 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         view.findViewById<View>(R.id.mapStyleButton).setOnClickListener {
             com.example.gpxeditor.util.MapStyleManager.showSelector(requireContext(), mapView)
         }
+        view.findViewById<View>(R.id.btnRouteHelp).setOnClickListener {
+            RouteHelpDialog.show(
+                fragment = this,
+                fusedLocationClient = fusedLocationClient,
+                cachedLocation = lastLocation,
+                onLocationResolved = { lastLocation = it },
+                onEvent = { event -> dbHelper.registrarEvento("AyudaRuta", event, null) }
+            )
+        }
 
         // Restaurar puntos y distancia de la grabación al volver al fragmento (después de inicializar mapView)
         restoreRecordingPoints()
