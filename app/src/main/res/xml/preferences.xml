@@ -30,6 +30,29 @@
             app:title="Nombre de usuario" />
 
     </PreferenceCategory>
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:layout="@layout/preference_category_naturutas"
+        app:title="Ayuda en ruta">
+
+        <EditTextPreference
+            android:hint="Ej.: 600123123, 611234234"
+            android:inputType="text"
+            app:iconSpaceReserved="false"
+            app:key="trusted_contact_phones"
+            app:layout="@layout/preference_card_naturutas"
+            app:summary="Añade uno o varios números separados por comas"
+            app:title="Teléfonos de confianza"
+            app:useSimpleSummaryProvider="true" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:layout="@layout/preference_card_naturutas"
+            app:selectable="false"
+            app:summary="El 112 se usa solo ante accidentes, peligro, personas perdidas o necesidad de rescate."
+            app:title="Emergencias: 112" />
+
+    </PreferenceCategory>
 
     <PreferenceCategory
         app:iconSpaceReserved="false"
