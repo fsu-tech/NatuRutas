@@ -53,6 +53,7 @@
             android:contentDescription="@string/expand_map"
             android:padding="12dp"
             android:src="@drawable/ic_fullscreen"
+            android:tint="#176B45"
             android:tooltipText="@string/expand_map" />
 
         <ImageButton
@@ -65,6 +66,7 @@
             android:background="@drawable/bg_map_control"
             android:contentDescription="@string/select_map_style"
             android:padding="12dp"
+            android:tint="#176B45"
             android:src="@drawable/ic_map" />
 
         <ImageButton
@@ -79,6 +81,7 @@
             android:contentDescription="Acercar mapa"
             android:elevation="6dp"
             android:padding="12dp"
+            android:tint="#176B45"
             android:src="@drawable/ic_zoom_in" />
 
         <ImageButton
@@ -92,6 +95,7 @@
             android:contentDescription="Alejar mapa"
             android:elevation="6dp"
             android:padding="12dp"
+            android:tint="#176B45"
             android:src="@drawable/ic_zoom_out" />
         <Button
             android:id="@+id/insigniasButton"
