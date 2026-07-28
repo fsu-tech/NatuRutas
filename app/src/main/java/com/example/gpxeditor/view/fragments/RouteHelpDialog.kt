@@ -7,6 +7,8 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.net.Uri
 import android.os.BatteryManager
+import android.os.Handler
+import android.os.Looper
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -22,6 +24,7 @@ import com.google.android.material.button.MaterialButton
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Panel de ayuda iniciado siempre por el usuario. No realiza llamadas ni envía mensajes
@@ -29,6 +32,7 @@ import java.util.Locale
  */
 object RouteHelpDialog {
     private const val LOCATION_PERMISSION_CODE = 102
+    private const val CURRENT_LOCATION_TIMEOUT_MS = 10_000L
 
     fun show(
         fragment: Fragment,
@@ -94,11 +98,8 @@ object RouteHelpDialog {
         }
         dialog.show()
 
-        if (cachedLocation == null &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            resolveCurrentLocation(fusedLocationClient) { location ->
+        if (hasLocationPermission(context)) {
+            resolveCurrentLocation(fusedLocationClient, cachedLocation, context) { location, _ ->
                 if (location != null && fragment.isAdded && dialog.isShowing) {
                     resolvedLocation = location
                     onLocationResolved(location)
@@ -124,24 +125,21 @@ object RouteHelpDialog {
         onEvent: (String) -> Unit
     ) {
         val context = fragment.requireContext()
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) !=
-            PackageManager.PERMISSION_GRANTED
-        ) {
+        if (!hasLocationPermission(context)) {
             ActivityCompat.requestPermissions(
                 fragment.requireActivity(),
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ),
                 LOCATION_PERMISSION_CODE
             )
             Toast.makeText(context, "Concede la ubicación y vuelve a pulsar Ayuda", Toast.LENGTH_LONG).show()
             return
         }
 
-        if (cachedLocation != null) {
-            share(fragment, cachedLocation, trustedContacts, onEvent)
-            return
-        }
-
-        resolveCurrentLocation(client) { location ->
+        Toast.makeText(context, "Buscando tu ubicación actual…", Toast.LENGTH_SHORT).show()
+        resolveCurrentLocation(client, cachedLocation, context) { location, isFresh ->
             if (!fragment.isAdded) return@resolveCurrentLocation
             if (location == null) {
                 Toast.makeText(
@@ -151,6 +149,15 @@ object RouteHelpDialog {
                 ).show()
             } else {
                 onLocationResolved(location)
+                if (!isFresh) {
+                    val lastKnownTime = SimpleDateFormat("HH:mm", Locale.getDefault())
+                        .format(Date(location.time))
+                    Toast.makeText(
+                        context,
+                        "No se pudo actualizar el GPS. Se compartirá la última ubicación, de las $lastKnownTime.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
                 share(fragment, location, trustedContacts, onEvent)
             }
         }
@@ -158,21 +165,52 @@ object RouteHelpDialog {
 
     private fun resolveCurrentLocation(
         client: FusedLocationProviderClient,
-        result: (Location?) -> Unit
+        fallbackLocation: Location?,
+        context: Context,
+        result: (Location?, Boolean) -> Unit
     ) {
-        client.lastLocation
-            .addOnSuccessListener { cached ->
-                if (cached != null) {
-                    result(cached)
-                } else {
-                    val tokenSource = CancellationTokenSource()
-                    client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, tokenSource.token)
-                        .addOnSuccessListener(result)
-                        .addOnFailureListener { result(null) }
-                }
+        val tokenSource = CancellationTokenSource()
+        val handler = Handler(Looper.getMainLooper())
+        val delivered = AtomicBoolean(false)
+
+        fun deliver(location: Location?, isFresh: Boolean) {
+            if (delivered.compareAndSet(false, true)) {
+                handler.removeCallbacksAndMessages(null)
+                result(location, isFresh)
             }
-            .addOnFailureListener { result(null) }
+        }
+
+        fun useLastKnownLocation() {
+            client.lastLocation
+                .addOnSuccessListener { cached -> deliver(cached ?: fallbackLocation, false) }
+                .addOnFailureListener { deliver(fallbackLocation, false) }
+        }
+
+        handler.postDelayed({
+            tokenSource.cancel()
+            useLastKnownLocation()
+        }, CURRENT_LOCATION_TIMEOUT_MS)
+
+        val priority = if (
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            Priority.PRIORITY_HIGH_ACCURACY
+        } else {
+            Priority.PRIORITY_BALANCED_POWER_ACCURACY
+        }
+        client.getCurrentLocation(priority, tokenSource.token)
+            .addOnSuccessListener { location ->
+                if (location != null) deliver(location, true) else useLastKnownLocation()
+            }
+            .addOnFailureListener { useLastKnownLocation() }
     }
+
+    private fun hasLocationPermission(context: Context): Boolean =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
 
     private fun share(
         fragment: Fragment,
